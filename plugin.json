@@ -1,7 +1,7 @@
 {
   "$schema": "https://acode.app/schema/plugin/v0.1.0.json",
   "id": "lumen.breadcrumbs",
-  "name": "Breadcrumbs (JS,TS)",
+  "name": "Breadcrumbs (JS,TS, JSX, TSX)",
   "main": "main.js",
   "version": "1.0.0",
   "repository": "https://github.com/CodeNoKami/acode-breadcrumbs",
