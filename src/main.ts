@@ -75,16 +75,28 @@ class BreadcrumbsPlugin {
   private getIconByType(type: string): string {
     switch (type) {
       case "class":
-        return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #f1c40f; vertical-align: middle; margin-right: 3px;"><path d="M8.7 2.3c.2-.2.3-.5.3-.8V1H7v.5c0 .3.1.6.3.8l1.4 1c.4.3.4.9 0 1.2l-1.4 1c-.2.2-.3.5-.3.8V7h2V6.3c0-.3-.1-.5-.3-.7L8.7 4.6c-.4-.3-.4-.9 0-1.2l1.4-1.1zM5 4h1V3H5c-1.1 0-2 .9-2 2v2H1v2h2v2c0 1.1.9 2 2 2h1v-1H5c-.6 0-1-.4-1-1V9H2V7h2V5c0-.6.4-1 1-1zm6 3h2v2h-2v2c0 .6-.4 1-1 1h-1v-1h1c.6 0 1-.4 1-1V9h2V7h-2V5c0-.6.4-1 1-1h1V3h-1c-1.1 0-2 .9-2 2v2z"/></svg>`;
+        // 🟡 Yellow Beautiful Class Brackets Box Icon ({}) - Fixed SVG Path
+        return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #f1c40f; vertical-align: middle; margin-right: 3px;"><path d="M4 1.5h2v1H5c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1h-.5v1H3c.6 0 1 .4 1 1v3c0 .6.4 1 1 1h1v1H4c-1.1 0-2-.9-2-2v-2.5c0-.6-.4-1-1-1v-1c.6 0 1-.4 1-1V3.5c0-1.1.9-2 2-2zm8 0h-2v1h1c.6 0 1 .4 1 1v3c0 .6.4 1 1 1h.5v1h-.5c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1h-1v1h2c1.1 0 2-.9 2-2v-2.5c0-.6.4-1 1-1v-1c-.6 0-1-.4-1-1V3.5c0-1.1-.9-2-2-2z"/></svg>`;
       case "method":
+        // 🟣 Purple Method Icon (Cube)
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #9b59b6; vertical-align: middle; margin-right: 3px;"><path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1zm4.8 4.1L8 2.3 3.2 5.1 8 7.9l4.8-2.8zM2.5 6.4v4.5l5 2.9V9.3l-5-2.9zm6 2.9v4.5l5-2.9V6.4l-5 2.9z"/></svg>`;
       case "function":
+        // 🔵 Blue Function Icon (ƒ / Lambda)
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #3498db; vertical-align: middle; margin-right: 3px;"><path d="M10.5 2h-2c-1.4 0-2.5 1.1-2.5 2.5V7H4v2h2v5h2V9h2.5V7H8V4.5c0-.3.2-.5.5-.5h2V2z"/></svg>`;
       case "arrow":
       case "callback":
+        // 🟢 Teal Arrow Function Icon (=>)
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #1abc9c; vertical-align: middle; margin-right: 3px;"><path d="M2 4h6v2H2V4zm7.2 1.3l2.5 2.2-2.5 2.2 1.1 1.3 4-3.5-4-3.5-1.1 1.3zM2 10h6v2H2v-2z"/></svg>`;
       case "objectKey":
+      case "object":
+        // 🟢 Teal Property Field List Icon
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #1abc9c; vertical-align: middle; margin-right: 3px;"><path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"/></svg>`;
+      case "listener":
+        // 💗 Event Listener Pink Lightning Icon
+        return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #e84393; vertical-align: middle; margin-right: 3px;"><path d="M11 1L3 9h4v6l8-8h-5z"/></svg>`;
+      case "type":
+        // 🟠 Orange TypeScript Type Badge Icon (T)
+        return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #e67e22; vertical-align: middle; margin-right: 3px;"><path d="M2 2h12v3h-2V4H9v10H7V4H4v1h-2V2z"/></svg>`;
       default:
         return "";
     }
@@ -101,7 +113,12 @@ class BreadcrumbsPlugin {
       case "arrow":
       case "callback":
       case "objectKey":
+      case "object":
         return "#1abc9c";
+      case "listener":
+        return "#e84393";
+      case "type":
+        return "#e67e22";
       default:
         return "var(--text-color, var(--primary-text-color, #ffffff))";
     }
@@ -111,18 +128,15 @@ class BreadcrumbsPlugin {
     const containerEl = this.container;
     if (!containerEl || !editor || !editor.state) return;
 
-    // ✨ [Extension Filter] လက်ရှိဖွင့်ထားသော File type ကို စစ်ဆေးခြင်း
     let currentFile = editorManager.activeFile;
     let filename = currentFile ? currentFile.filename.toLowerCase() : "";
-
-    // .js, .jsx, .ts, .tsx ဖြစ်မဖြစ် စစ်ဆေးခြင်း
     const isSupportedFile = /\.(js|jsx|ts|tsx)$/.test(filename);
 
     if (!isSupportedFile) {
-      containerEl.style.display = "none"; // JS/TS မဟုတ်လျှင် Bar တန်းကို လုံးဝဖျောက်ထားမည်
+      containerEl.style.display = "none";
       return;
     } else {
-      containerEl.style.display = "flex"; // JS/TS ဖြစ်ပါက ပြန်ဖော်မည်
+      containerEl.style.display = "flex";
     }
 
     const state = editor.state;
@@ -131,6 +145,7 @@ class BreadcrumbsPlugin {
 
     let scopeStack: ScopeBlock[] = [];
 
+    // Production-Grade TypeScript & Modern JavaScript Compatible Patterns Engine
     const patterns = [
       {
         type: "class",
@@ -139,18 +154,33 @@ class BreadcrumbsPlugin {
       },
       {
         type: "method",
+        // TypeScript Type-safe Method Pattern (e.g. myMethod(): string)
         regex:
-          /^\s*(?:(?:public|private|protected|static|async|get|set)\s+)*\*?\s*([a-zA-Z0-9_$]+)\s*\([^)]*\)\s*\{?/,
+          /^\s*(?:(?:public|private|protected|static|async|get|set)\s+)*\*?\s*([a-zA-Z0-9_$]+)\s*\([^)]*\)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*\{?/,
       },
       {
         type: "arrow",
+        // TypeScript Void & Generic Type-safe Arrow Pattern (e.g. const inc = (): void =>)
         regex:
-          /^\s*(?:const|let|var|private|public|protected|static)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[a-zA-Z0-9_$]+)\s*=>\s*\{?/,
+          /^\s*(?:const|let|var|private|public|protected|static)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[a-zA-Z0-9_$]+)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*=>\s*\{?/,
       },
       {
         type: "function",
+        // TypeScript Named Function Pattern (e.g. function test(): number)
         regex:
-          /^\s*(?:export\s+(?:default\s+)?)?function\s*\*?\s*([a-zA-Z0-9_$]+)/,
+          /^\s*(?:export\s+(?:default\s+)?)?function\s*\*?\s*([a-zA-Z0-9_$]+)\s*\([^)]*\)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*\{?/,
+      },
+      {
+        type: "object",
+        regex: /^\s*(?:const|let|var|export)\s+([a-zA-Z0-9_$]+)\s*=\s*\{/,
+      },
+      {
+        type: "listener",
+        regex: /^\s*([a-zA-Z0-9_$]+(?:\.[a-zA-Z0-9_$]+)*\.addEventListener)/,
+      },
+      {
+        type: "type",
+        regex: /^\s*(?:export\s+)?type\s+([a-zA-Z0-9_$]+)\s*=\s*\{?/,
       },
       {
         type: "callback",
