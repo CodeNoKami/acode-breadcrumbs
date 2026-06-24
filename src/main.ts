@@ -113,8 +113,7 @@ class BreadcrumbsPlugin {
     for (let i = 1; i <= targetLineNum; i++) {
       let lineText = state.doc.line(i).text;
 
-      // လိုင်းရဲ့ အနောက်မှာ ကပ်ပါလာတဲ့ inline comment (// ...) တွေကို လုံးဝ ဖြတ်ထုတ်ပစ်ခြင်း
-      // (http:// သို့မဟုတ် https:// တွေကို မှားမဖြတ်မိအောင် regex ခံထားပါတယ်)
+      // ၁။ Inline Comment များ ဖြတ်ထုတ်ခြင်း
       lineText = lineText.replace(/(?!https?:)\/\/.*$/, "");
 
       const trimmed = lineText.trim();
@@ -128,9 +127,11 @@ class BreadcrumbsPlugin {
         continue;
       }
 
+      // စာလုံးတစ်လုံးချင်းစီကို Scan ဖတ်ပြီး ဖွင့်/ပိတ် ကွက်တိ စစ်ဆေးခြင်း
       let matchedInLine = false;
       let matchedBlock: ScopeBlock | null = null;
 
+      // ၂။ Regex Pattern ကို လက်ရှိ lineText အတိုင်း အရင်ရှာဖွေ စစ်ဆေးခြင်း
       for (const p of SCOPE_PATTERNS) {
         const match = lineText.match(p.regex);
         if (match) {
@@ -165,14 +166,20 @@ class BreadcrumbsPlugin {
         }
       }
 
-      for (let ch = 0; ch < lineText.length; ch++) {
-        const char = lineText[ch];
+      // 💡 [NEW LOGIC] Character Scan မဖတ်မီ ကွင်း () ထဲ၌ ပါဝင်သော အရာအားလုံးကို ဖယ်ထုတ်ပစ်ခြင်း
+      // ဤသို့ဖြင့် ({ posts }) ကဲ့သို့သော ညှပ်ကွင်းများကြောင့် ကွင်းအရေအတွက် လွဲချော်ခြင်း လုံးဝ မရှိတော့ပါ
+      let scanLine = lineText.replace(/\([^]*?\)/g, "()");
+
+      // ၃။ ကွင်းအရေအတွက် Scan ဖတ်သည့်နေရာတွင် scanLine ကို သုံးပါမည်
+      for (let ch = 0; ch < scanLine.length; ch++) {
+        const char = scanLine[ch];
 
         if (char === "{" || char === "[") {
           if (matchedInLine && matchedBlock) {
             braceStack.push(matchedBlock);
-            matchedInLine = false;
+            matchedInLine = false; // တစ်ခါပဲ Push ဖို့ ကာကွယ်ခြင်း
           } else {
+            // Pattern မမိဘဲ ပွင့်လာတဲ့ ကွင်းတွေကို Anonymous အဖြစ် မှတ်ထားမယ်
             braceStack.push({
               name: "{anonymous}",
               type: "anonymous",
@@ -181,7 +188,7 @@ class BreadcrumbsPlugin {
           }
         } else if (char === "}" || char === "]") {
           if (braceStack.length > 0) {
-            braceStack.pop();
+            braceStack.pop(); // ကွင်းပိတ်တာနဲ့ Stack ပေါ်ဆုံးက ကောင်ကို တန်းဖြုတ်မယ်
           }
         }
       }
