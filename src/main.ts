@@ -13,6 +13,7 @@ interface ScopeBlock {
 class BreadcrumbsPlugin {
   private container: HTMLDivElement | null = null;
   private intervalId: any = null;
+  private onFontChangeHandler: ((newAppFont: string) => void) | null = null;
 
   public async init(baseUrl: string, $page: any, cache: any): Promise<void> {
     const _ = { baseUrl, $page, cache };
@@ -29,6 +30,9 @@ class BreadcrumbsPlugin {
   private setupBreadcrumbs(editor: EditorView) {
     if (this.container) this.container.remove();
 
+    const settings: any = acode.require("settings");
+    let appFont: string = settings.get("appFont") || "monospace";
+
     this.container = document.createElement("div");
     this.container.id = "acode-breadcrumbs-bar";
 
@@ -36,10 +40,17 @@ class BreadcrumbsPlugin {
       display: flex; align-items: center; gap: 6px; padding: 6px 12px;
       background-color: var(--secondary-color, #1e1e1e); 
       color: var(--text-color, var(--primary-text-color, #ffffff));
-      font-family: monospace; font-size: 11px; border-bottom: 1px solid var(--border-color, #333);
+      font-family: ${appFont}, monospace; font-size: 11px; border-bottom: 1px solid var(--border-color, #333);
       overflow-x: auto; white-space: nowrap; box-sizing: border-box;
-      z-index: 10;
+      z-index: 10; 
     `;
+
+    this.onFontChangeHandler = (newAppFont: string) => {
+      if (this.container) {
+        this.container.style.fontFamily = `${newAppFont}, monospace`;
+      }
+    };
+    settings.on("update:appFont", this.onFontChangeHandler);
 
     editor.dom.prepend(this.container);
 
@@ -75,30 +86,22 @@ class BreadcrumbsPlugin {
   private getIconByType(type: string): string {
     switch (type) {
       case "class":
-        // 🟡 Yellow Beautiful Class Brackets Box Icon ({})
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #f1c40f; vertical-align: middle; margin-right: 3px;"><path d="M4 1.5h2v1H5c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1h-.5v1H3c.6 0 1 .4 1 1v3c0 .6.4 1 1 1h1v1H4c-1.1 0-2-.9-2-2v-2.5c0-.6-.4-1-1-1v-1c.6 0 1-.4 1-1V3.5c0-1.1.9-2 2-2zm8 0h-2v1h1c.6 0 1 .4 1 1v3c0 .6.4 1 1 1h.5v1h-.5c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1h-1v1h2c1.1 0 2-.9 2-2v-2.5c0-.6.4-1 1-1v-1c-.6 0-1-.4-1-1V3.5c0-1.1-.9-2-2-2z"/></svg>`;
       case "method":
-        // 🟣 Purple Method Icon (Cube)
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #9b59b6; vertical-align: middle; margin-right: 3px;"><path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1zm4.8 4.1L8 2.3 3.2 5.1 8 7.9l4.8-2.8zM2.5 6.4v4.5l5 2.9V9.3l-5-2.9zm6 2.9v4.5l5-2.9V6.4l-5 2.9z"/></svg>`;
       case "function":
-        // 🔵 Blue Function Icon (ƒ / Lambda)
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #3498db; vertical-align: middle; margin-right: 3px;"><path d="M10.5 2h-2c-1.4 0-2.5 1.1-2.5 2.5V7H4v2h2v5h2V9h2.5V7H8V4.5c0-.3.2-.5.5-.5h2V2z"/></svg>`;
       case "arrow":
       case "callback":
-        // 🟢 Teal Arrow Function Icon (=>)
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #1abc9c; vertical-align: middle; margin-right: 3px;"><path d="M2 4h6v2H2V4zm7.2 1.3l2.5 2.2-2.5 2.2 1.1 1.3 4-3.5-4-3.5-1.1 1.3zM2 10h6v2H2v-2z"/></svg>`;
       case "array":
-        // 🟢 Teal Array Square Brackets Icon ([])
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #1abc9c; vertical-align: middle; margin-right: 3px;"><path d="M3 1.5h3v1H4v11h2v1H3v-13zm10 0h-3v1h2v11h-2v1h3v-13z"/></svg>`;
       case "objectKey":
       case "object":
-        // 🟢 Teal Property Field List Icon
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #1abc9c; vertical-align: middle; margin-right: 3px;"><path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"/></svg>`;
       case "listener":
-        // 💗 Event Listener Pink Lightning Icon
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #e84393; vertical-align: middle; margin-right: 3px;"><path d="M11 1L3 9h4v6l8-8h-5z"/></svg>`;
       case "type":
-        // 🟠 Orange TypeScript Type Badge Icon (T)
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #e67e22; vertical-align: middle; margin-right: 3px;"><path d="M2 2h12v3h-2V4H9v10H7V4H4v1h-2V2z"/></svg>`;
       default:
         return "";
@@ -170,7 +173,6 @@ class BreadcrumbsPlugin {
         regex:
           /^\s*(?:export\s+(?:default\s+)?)?function\s*\*?\s*([a-zA-Z0-9_$]+)\s*\([^)]*\)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*\{?/,
       },
-      // ✨ [Array Fix] Array Literals & Typed Arrays (e.g. const seedUsers: User[] = [)
       {
         type: "array",
         regex:
@@ -188,7 +190,6 @@ class BreadcrumbsPlugin {
         type: "type",
         regex: /^\s*(?:export\s+)?type\s+([a-zA-Z0-9_$]+)\s*=\s*\{?/,
       },
-      // ✨ [Method Name Fix] users.map, users.filter စသည်ဖြင့် တကယ့် Method နာမည်ကို တိုက်ရိုက်ဆွဲထုတ်ယူခြင်း
       {
         type: "callback",
         regex:
@@ -243,7 +244,6 @@ class BreadcrumbsPlugin {
               "var",
             ].includes(rawName)
           ) {
-            // ✨ Dynamic Method Mapping Logic (`users.callback` အစား `users.map` စသည်ဖြင့် ပြောင်းလဲခြင်း)
             matchedName =
               p.type === "callback" ? `${rawName}.${match[2]}` : rawName;
             matchedType = p.type;
@@ -264,19 +264,28 @@ class BreadcrumbsPlugin {
     containerEl.innerHTML = "";
 
     const prefix = document.createElement("span");
-    prefix.textContent = "Symbols";
+    prefix.style.display = "inline-flex";
+    prefix.style.alignItems = "center";
+
+    const breadcrumbsIconHtml = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: var(--text-color, var(--primary-text-color, #ffffff)); vertical-align: middle; margin-right: 5px; margin-top: 1px;"><path d="M1 3h4v1H1V3zm5 2.5l2-2 2 2v1l-1.5-1.5V9h-1V5l-1.5 1.5v-1zM11 7h4v1h-4V7zm2 4h2v1h-2v-1zm-6 2h4v1H7v-1zM2 9h3v1H2V9z"/></svg>`;
+
+    prefix.innerHTML = `${breadcrumbsIconHtml}Breadcrumbs`;
     prefix.style.color =
       "var(--text-color, var(--primary-text-color, #ffffff))";
     containerEl.appendChild(prefix);
 
     const separatorRoot = document.createElement("span");
-    separatorRoot.textContent = " › ";
+    separatorRoot.style.display = "inline-flex";
+    separatorRoot.style.alignItems = "center";
+    separatorRoot.innerHTML = `<i style="font-size: 15px; display: inline-block; vertical-align: middle;" class="icon keyboard_arrow_right"></i>`;
     separatorRoot.style.color =
       "var(--text-color, var(--primary-text-color, #ffffff))";
     containerEl.appendChild(separatorRoot);
 
     if (scopeStack.length === 0) {
       const globalSpan = document.createElement("span");
+      globalSpan.style.display = "inline-flex";
+      globalSpan.style.alignItems = "center";
       globalSpan.textContent = "Global";
       globalSpan.style.color =
         "var(--text-color, var(--primary-text-color, #ffffff))";
@@ -294,7 +303,9 @@ class BreadcrumbsPlugin {
 
         if (index < scopeStack.length - 1) {
           const sep = document.createElement("span");
-          sep.textContent = " › ";
+          sep.style.display = "inline-flex";
+          sep.style.alignItems = "center";
+          sep.innerHTML = `<i style="font-size: 15px; display: inline-block; vertical-align: middle;" class="icon keyboard_arrow_right"></i>`;
           sep.style.color =
             "var(--text-color, var(--primary-text-color, #ffffff))";
           containerEl.appendChild(sep);
@@ -305,6 +316,12 @@ class BreadcrumbsPlugin {
 
   public async destroy(): Promise<void> {
     if (this.intervalId) clearInterval(this.intervalId);
+
+    if (this.onFontChangeHandler) {
+      const settings: any = acode.require("settings");
+      settings.off("update:appFont", this.onFontChangeHandler);
+    }
+
     document.removeEventListener(
       "selectionchange",
       this.onGlobalSelectionChange,
