@@ -75,7 +75,7 @@ class BreadcrumbsPlugin {
   private getIconByType(type: string): string {
     switch (type) {
       case "class":
-        // 🟡 Yellow Beautiful Class Brackets Box Icon ({}) - Fixed SVG Path
+        // 🟡 Yellow Beautiful Class Brackets Box Icon ({})
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #f1c40f; vertical-align: middle; margin-right: 3px;"><path d="M4 1.5h2v1H5c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1h-.5v1H3c.6 0 1 .4 1 1v3c0 .6.4 1 1 1h1v1H4c-1.1 0-2-.9-2-2v-2.5c0-.6-.4-1-1-1v-1c.6 0 1-.4 1-1V3.5c0-1.1.9-2 2-2zm8 0h-2v1h1c.6 0 1 .4 1 1v3c0 .6.4 1 1 1h.5v1h-.5c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1h-1v1h2c1.1 0 2-.9 2-2v-2.5c0-.6.4-1 1-1v-1c-.6 0-1-.4-1-1V3.5c0-1.1-.9-2-2-2z"/></svg>`;
       case "method":
         // 🟣 Purple Method Icon (Cube)
@@ -87,6 +87,9 @@ class BreadcrumbsPlugin {
       case "callback":
         // 🟢 Teal Arrow Function Icon (=>)
         return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #1abc9c; vertical-align: middle; margin-right: 3px;"><path d="M2 4h6v2H2V4zm7.2 1.3l2.5 2.2-2.5 2.2 1.1 1.3 4-3.5-4-3.5-1.1 1.3zM2 10h6v2H2v-2z"/></svg>`;
+      case "array":
+        // 🟢 Teal Array Square Brackets Icon ([])
+        return `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: #1abc9c; vertical-align: middle; margin-right: 3px;"><path d="M3 1.5h3v1H4v11h2v1H3v-13zm10 0h-3v1h2v11h-2v1h3v-13z"/></svg>`;
       case "objectKey":
       case "object":
         // 🟢 Teal Property Field List Icon
@@ -114,6 +117,7 @@ class BreadcrumbsPlugin {
       case "callback":
       case "objectKey":
       case "object":
+      case "array":
         return "#1abc9c";
       case "listener":
         return "#e84393";
@@ -145,7 +149,6 @@ class BreadcrumbsPlugin {
 
     let scopeStack: ScopeBlock[] = [];
 
-    // Production-Grade TypeScript & Modern JavaScript Compatible Patterns Engine
     const patterns = [
       {
         type: "class",
@@ -154,21 +157,24 @@ class BreadcrumbsPlugin {
       },
       {
         type: "method",
-        // TypeScript Type-safe Method Pattern (e.g. myMethod(): string)
         regex:
           /^\s*(?:(?:public|private|protected|static|async|get|set)\s+)*\*?\s*([a-zA-Z0-9_$]+)\s*\([^)]*\)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*\{?/,
       },
       {
         type: "arrow",
-        // TypeScript Void & Generic Type-safe Arrow Pattern (e.g. const inc = (): void =>)
         regex:
           /^\s*(?:const|let|var|private|public|protected|static)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[a-zA-Z0-9_$]+)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*=>\s*\{?/,
       },
       {
         type: "function",
-        // TypeScript Named Function Pattern (e.g. function test(): number)
         regex:
           /^\s*(?:export\s+(?:default\s+)?)?function\s*\*?\s*([a-zA-Z0-9_$]+)\s*\([^)]*\)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*\{?/,
+      },
+      // ✨ [Array Fix] Array Literals & Typed Arrays (e.g. const seedUsers: User[] = [)
+      {
+        type: "array",
+        regex:
+          /^\s*(?:const|let|var|export)\s+([a-zA-Z0-9_$]+)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*=\s*\[/,
       },
       {
         type: "object",
@@ -182,10 +188,11 @@ class BreadcrumbsPlugin {
         type: "type",
         regex: /^\s*(?:export\s+)?type\s+([a-zA-Z0-9_$]+)\s*=\s*\{?/,
       },
+      // ✨ [Method Name Fix] users.map, users.filter စသည်ဖြင့် တကယ့် Method နာမည်ကို တိုက်ရိုက်ဆွဲထုတ်ယူခြင်း
       {
         type: "callback",
         regex:
-          /([a-zA-Z0-9_$]+)\.(?:map|reduce|filter|forEach|find)\s*\(\s*(?:\([^)]*\)|[a-zA-Z0-9_$]+)\s*=>\s*\{?/,
+          /([a-zA-Z0-9_$]+)\.([a-zA-Z0-9_$]+)\s*\(\s*(?:\([^)]*\)|[a-zA-Z0-9_$]+)\s*=>\s*\{?/,
       },
       {
         type: "objectKey",
@@ -236,8 +243,9 @@ class BreadcrumbsPlugin {
               "var",
             ].includes(rawName)
           ) {
+            // ✨ Dynamic Method Mapping Logic (`users.callback` အစား `users.map` စသည်ဖြင့် ပြောင်းလဲခြင်း)
             matchedName =
-              p.type === "callback" ? `${rawName}.callback` : rawName;
+              p.type === "callback" ? `${rawName}.${match[2]}` : rawName;
             matchedType = p.type;
             break;
           }
