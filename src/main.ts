@@ -1,25 +1,17 @@
 import { PLUGIN_ID } from "./configs/constant";
 import { EditorView } from "@codemirror/view";
-import {
-  SCOPE_PATTERNS,
-  IGNORED_KEYWORDS,
-  getIconByType,
-  getColorByType,
-} from "./utils/patterns";
+import { resolveBreadcrumbs, ScopeBlock } from "./utils/lezerParser";
+import { getIconByType, getColorByType } from "./utils/patterns";
 
 declare var editorManager: any;
 declare var acode: any;
 
-interface ScopeBlock {
-  name: string;
-  type: string;
-  isAnonymous: boolean; // သာမန် အပိတ်အဖွင့်တွေအတွက် ခွဲခြားရန်
-}
-
 class BreadcrumbsPlugin {
   private container: HTMLDivElement | null = null;
   private intervalId: any = null;
+  private debounceTimeout: any = null;
   private onFontChangeHandler: ((newAppFont: string) => void) | null = null;
+  private currentEditor: EditorView | null = null;
 
   public async init(baseUrl: string, $page: any, cache: any): Promise<void> {
     const _ = { baseUrl, $page, cache };
@@ -27,6 +19,7 @@ class BreadcrumbsPlugin {
       const editor = editorManager.editor;
       if (editor && editor.dom) {
         clearInterval(this.intervalId);
+        this.intervalId = null;
         this.setupBreadcrumbs(editor);
       }
     }, 200);
@@ -34,6 +27,7 @@ class BreadcrumbsPlugin {
 
   private setupBreadcrumbs(editor: EditorView) {
     if (this.container) this.container.remove();
+    this.currentEditor = editor;
 
     const settings: any = acode.require("settings");
     let appFont: string = settings.get("appFont") || "monospace";
@@ -42,41 +36,62 @@ class BreadcrumbsPlugin {
     this.container.id = "acode-breadcrumbs-bar";
 
     this.container.style.cssText = `
-      display: flex; align-items: center; gap: 6px; padding: 6px 20px 6px 12px;
+      display: flex; align-items: center; gap: 6px; padding: 6px 25px 6px 12px;
       background-color: var(--secondary-color, #1e1e1e); 
       color: var(--text-color, var(--primary-text-color, #ffffff));
       font-family: ${appFont}, monospace; font-size: 11px; border-bottom: 1px solid var(--border-color, #333);
-      overflow-y: hidden; overflow-x: auto; white-space: nowrap; box-sizing: border-box;
-      z-index: 10; 
+      overflow-x: auto; overflow-y: hidden; white-space: nowrap; box-sizing: border-box;
+      z-index: 10; height: 28px;
     `;
 
     this.onFontChangeHandler = (newAppFont: string) => {
-      if (this.container) {
+      if (this.container)
         this.container.style.fontFamily = `${newAppFont}, monospace`;
-      }
     };
     settings.on("update:appFont", this.onFontChangeHandler);
 
     editor.dom.prepend(this.container);
 
     if (editorManager && editorManager.on) {
-      editorManager.on("switch-file", this.onEditorUpdate);
+      editorManager.on("switch-file", this.onFileSwitched);
     }
 
     this.injectUpdateListener(editor);
     this.updateBreadcrumbs(editor);
   }
 
-  private injectUpdateListener(editor: any) {
-    if (editor.dom) {
-      editor.dom.addEventListener("focusin", this.onEditorUpdate);
+  private onFileSwitched = () => {
+    const editor = editorManager.editor;
+    if (editor && editor.dom) {
+      this.currentEditor = editor;
+      if (this.container) {
+        editor.dom.prepend(this.container);
+      }
+      this.updateBreadcrumbs(editor);
     }
+  };
+
+  private injectUpdateListener(editor: EditorView) {
+    // 💡 ကုဒ်ဟောင်းထဲက အကောင်းဆုံးဖြစ်တဲ့ အလုပ်အမြန်ဆုံး Native Global Selection Listener အား ပြန်လည်အသုံးပြုခြင်း
+    // စိတ်မချရသော registerExtension စနစ်ကြီးအား လုံးဝဖယ်ထုတ်ပစ်လိုက်သည်
+    document.removeEventListener(
+      "selectionchange",
+      this.onGlobalSelectionChange,
+    );
     document.addEventListener("selectionchange", this.onGlobalSelectionChange);
+
+    if (editor.dom) {
+      editor.dom.removeEventListener("focusin", this.onEditorUpdate);
+      editor.dom.addEventListener("focusin", this.onEditorUpdate);
+      editor.dom.removeEventListener("click", this.onEditorUpdate);
+      editor.dom.addEventListener("click", this.onEditorUpdate);
+    }
   }
 
   private onGlobalSelectionChange = () => {
     const editor = editorManager.editor;
-    if (editor && editor.hasFocus) {
+    // 💡 focus timing အောက်မကျစေရန် စစ်ဆေးချက်ကို ရိုးရှင်းအောင် ကုဒ်ဟောင်းအတိုင်း ပြန်ပြင်ဆင်သည်
+    if (editor) {
       this.updateBreadcrumbs(editor);
     }
   };
@@ -84,6 +99,7 @@ class BreadcrumbsPlugin {
   private onEditorUpdate = () => {
     const editor = editorManager.editor;
     if (editor) {
+      // ၁၀ မီလီစက္ကန့်အတွင်း ချက်ချင်း update ဆွဲခေါ်ခြင်း
       setTimeout(() => this.updateBreadcrumbs(editor), 10);
     }
   };
@@ -103,171 +119,99 @@ class BreadcrumbsPlugin {
       containerEl.style.display = "flex";
     }
 
-    const state = editor.state;
-    const pos = state.selection.main.head;
-    const targetLineNum = state.doc.lineAt(pos).number;
-
-    // အစစ်အမှန် Braces Stack စနစ်
-    let braceStack: ScopeBlock[] = [];
-
-    for (let i = 1; i <= targetLineNum; i++) {
-      let lineText = state.doc.line(i).text;
-
-      // ၁။ Inline Comment များ ဖြတ်ထုတ်ခြင်း
-      lineText = lineText.replace(/(?!https?:)\/\/.*$/, "");
-
-      const trimmed = lineText.trim();
-
-      if (
-        !trimmed ||
-        trimmed.startsWith("*") ||
-        trimmed.startsWith("/*") ||
-        trimmed.startsWith("*/")
-      ) {
-        continue;
-      }
-
-      // စာလုံးတစ်လုံးချင်းစီကို Scan ဖတ်ပြီး ဖွင့်/ပိတ် ကွက်တိ စစ်ဆေးခြင်း
-      let matchedInLine = false;
-      let matchedBlock: ScopeBlock | null = null;
-
-      // ၂။ Regex Pattern ကို လက်ရှိ lineText အတိုင်း အရင်ရှာဖွေ စစ်ဆေးခြင်း
-      for (const p of SCOPE_PATTERNS) {
-        const match = lineText.match(p.regex);
-        if (match) {
-          if (
-            [
-              "for",
-              "for-in",
-              "for-of",
-              "while",
-              "do-while",
-              "switch",
-              "if",
-              "else",
-              "try",
-              "catch",
-            ].includes(p.type)
-          ) {
-            matchedBlock = { name: p.type, type: p.type, isAnonymous: false };
-            matchedInLine = true;
-            break;
-          }
-
-          const nameIdx =
-            p.type === "class" || (p.type === "function" && match[2]) ? 2 : 1;
-          const rawName = match[nameIdx];
-
-          if (rawName && !IGNORED_KEYWORDS.includes(rawName)) {
-            matchedBlock = { name: rawName, type: p.type, isAnonymous: false };
-            matchedInLine = true;
-            break;
-          }
-        }
-      }
-
-      // 💡 [NEW LOGIC] Character Scan မဖတ်မီ ကွင်း () ထဲ၌ ပါဝင်သော အရာအားလုံးကို ဖယ်ထုတ်ပစ်ခြင်း
-      // ဤသို့ဖြင့် ({ posts }) ကဲ့သို့သော ညှပ်ကွင်းများကြောင့် ကွင်းအရေအတွက် လွဲချော်ခြင်း လုံးဝ မရှိတော့ပါ
-      let scanLine = lineText.replace(/\([^]*?\)/g, "()");
-
-      // ၃။ ကွင်းအရေအတွက် Scan ဖတ်သည့်နေရာတွင် scanLine ကို သုံးပါမည်
-      for (let ch = 0; ch < scanLine.length; ch++) {
-        const char = scanLine[ch];
-
-        if (char === "{" || char === "[") {
-          if (matchedInLine && matchedBlock) {
-            braceStack.push(matchedBlock);
-            matchedInLine = false; // တစ်ခါပဲ Push ဖို့ ကာကွယ်ခြင်း
-          } else {
-            // Pattern မမိဘဲ ပွင့်လာတဲ့ ကွင်းတွေကို Anonymous အဖြစ် မှတ်ထားမယ်
-            braceStack.push({
-              name: "{anonymous}",
-              type: "anonymous",
-              isAnonymous: true,
-            });
-          }
-        } else if (char === "}" || char === "]") {
-          if (braceStack.length > 0) {
-            braceStack.pop(); // ကွင်းပိတ်တာနဲ့ Stack ပေါ်ဆုံးက ကောင်ကို တန်းဖြုတ်မယ်
-          }
-        }
-      }
+    if (!containerEl.parentElement && editor.dom) {
+      editor.dom.prepend(containerEl);
     }
 
-    // Render ပြခါနီးရင် Anonymous ကောင်တွေကို ဖယ်ပြီး တကယ့် Valid Scopes တွေကိုပဲ ယူမယ်
-    const validScopes = braceStack.filter((b) => !b.isAnonymous);
+    const state = editor.state;
+    const pos = state.selection.main.head;
+    const fullCode = state.doc.toString();
 
-    // --- HTML UI Layout Rendering ---
-    containerEl.innerHTML = "";
+    // 🚀 Lezer Parser Engine သို့ ပေးပို့၍ တိကျသော Structural scopes များကို ရယူခြင်း
+    const validScopes = resolveBreadcrumbs(fullCode, pos);
+
+    while (containerEl.firstChild) {
+      containerEl.removeChild(containerEl.firstChild);
+    }
 
     const prefix = document.createElement("span");
-    prefix.style.display = "inline-flex";
-    prefix.style.alignItems = "center";
+    prefix.style.cssText =
+      "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff));";
     const breadcrumbsIconHtml = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: var(--text-color, var(--primary-text-color, #ffffff)); vertical-align: middle; margin-right: 5px;"><path d="M1 3h4v1H1V3zm5 2.5l2-2 2 2v1l-1.5-1.5V9h-1V5l-1.5 1.5v-1zM11 7h4v1h-4V7zm2 4h2v1h-2v-1zm-6 2h4v1H7v-1zM2 9h3v1H2V9z"/></svg>`;
 
     prefix.innerHTML = `${breadcrumbsIconHtml}Breadcrumbs`;
-    prefix.style.color =
-      "var(--text-color, var(--primary-text-color, #ffffff))";
     containerEl.appendChild(prefix);
 
-    const separatorRoot = document.createElement("span");
-    separatorRoot.style.display = "inline-flex";
-    separatorRoot.style.alignItems = "center";
-    separatorRoot.innerHTML = `<i style="font-size: 15px; display: inline-block; vertical-align: middle;" class="icon keyboard_arrow_right"></i>`;
-    separatorRoot.style.color =
-      "var(--text-color, var(--primary-text-color, #ffffff))";
-    containerEl.appendChild(separatorRoot);
+    const baseSeparator = document.createElement("span");
+    baseSeparator.style.cssText =
+      "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff)); opacity: 0.7;";
+    baseSeparator.innerHTML = `<i style="font-size: 15px; display: inline-block; vertical-align: middle;" class="icon keyboard_arrow_right"></i>`;
+
+    containerEl.appendChild(baseSeparator.cloneNode(true));
 
     if (validScopes.length === 0) {
       const globalSpan = document.createElement("span");
-      globalSpan.style.display = "inline-flex";
-      globalSpan.style.alignItems = "center";
-      globalSpan.textContent = "Global";
-      globalSpan.style.color =
-        "var(--text-color, var(--primary-text-color, #ffffff))";
+      globalSpan.style.cssText =
+        "display: inline-flex; align-items: center; opacity: 0.8;";
+      globalSpan.textContent = "Global Scope";
       containerEl.appendChild(globalSpan);
     } else {
-      validScopes.forEach((block, index) => {
+      const fragment = document.createDocumentFragment();
+
+      validScopes.forEach((block: ScopeBlock, index: number) => {
         const scopeSpan = document.createElement("span");
-        scopeSpan.style.display = "inline-flex";
-        scopeSpan.style.alignItems = "center";
+        scopeSpan.style.cssText =
+          "display: inline-flex; align-items: center; gap: 3px;";
 
         const iconHtml = getIconByType(block.type);
-        scopeSpan.innerHTML = `${iconHtml}<span style="color: ${getColorByType(block.type)}; font-weight: bold;">${block.name}</span>`;
+        const isLast = index === validScopes.length - 1;
 
-        containerEl.appendChild(scopeSpan);
+        scopeSpan.innerHTML = `${iconHtml}<span style="color: ${getColorByType(block.type)}; font-weight: ${isLast ? "bold" : "normal"};">${block.name}</span>`;
+
+        fragment.appendChild(scopeSpan);
 
         if (index < validScopes.length - 1) {
-          const sep = document.createElement("span");
-          sep.style.display = "inline-flex";
-          sep.style.alignItems = "center";
-          sep.innerHTML = `<i style="font-size: 15px; display: inline-block; vertical-align: middle;" class="icon keyboard_arrow_right"></i>`;
-          sep.style.color =
-            "var(--text-color, var(--primary-text-color, #ffffff))";
-          containerEl.appendChild(sep);
+          fragment.appendChild(baseSeparator.cloneNode(true));
         }
       });
+
+      containerEl.appendChild(fragment);
     }
+
+    containerEl.scrollLeft = containerEl.scrollWidth;
   }
 
   public async destroy(): Promise<void> {
     if (this.intervalId) clearInterval(this.intervalId);
+    if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
+
     if (this.onFontChangeHandler) {
       const settings: any = acode.require("settings");
       settings.off("update:appFont", this.onFontChangeHandler);
     }
+
     document.removeEventListener(
       "selectionchange",
       this.onGlobalSelectionChange,
     );
-    const editor = editorManager.editor;
-    if (editor && editor.dom) {
-      editor.dom.removeEventListener("focusin", this.onEditorUpdate);
+
+    if (this.currentEditor && this.currentEditor.dom) {
+      this.currentEditor.dom.removeEventListener(
+        "focusin",
+        this.onEditorUpdate,
+      );
+      this.currentEditor.dom.removeEventListener("click", this.onEditorUpdate);
     }
+
     if (editorManager && editorManager.off) {
-      editorManager.off("switch-file", this.onEditorUpdate);
+      editorManager.off("switch-file", this.onFileSwitched);
     }
-    if (this.container) this.container.remove();
+
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
+    this.currentEditor = null;
   }
 }
 

@@ -1,6 +1,6 @@
 # Acode Breadcrumbs Plugin 🎬🍿
 
-A smart, high-performance, and **theme-adaptive VS Code-style Breadcrumbs navigation bar** for Acode Editor. It brings desktop-grade code structure visibility right onto your mobile screen, mapping out your classes, methods, and functions in real-time.
+A smart, high-performance, and **theme-adaptive VS Code-style Breadcrumbs navigation bar** for Acode Editor. It brings desktop-grade code structure visibility right onto your mobile screen, mapping out your classes, methods, functions, arrays, and objects in real-time using a powerful Hybrid AST Parsing Engine.
 
 ---
 
@@ -8,31 +8,32 @@ A smart, high-performance, and **theme-adaptive VS Code-style Breadcrumbs naviga
 
 ### Flawless Nested Scope Tracking & Dynamic Methods
 
-Active scope representation mapping smoothly from Classes to Methods and Array Operations directly:
+Active scope representation mapping smoothly from Classes to Methods, Array Operations, and Literals directly:
 
 ```
-Symbols › {} ReportBuilder › 📦 buildUserLines › => users.map
+Symbols › 📦 DatabaseService › 🚀 executeQuery › 🔄 if
+Symbols › ƒ handleDataPipeline › ⚡ filter
 ```
 
-### TypeScript Type-Alias Detection
+### TypeScript Type & Data Awareness
 
-Clean UI feedback for advanced TS definitions:
+Clean UI feedback for advanced TS definitions, Type annotations, Arrays, and nested Configurations:
 
 ```
-Symbols › T Role
+Symbols › 📄 UserRole › 🗂️ config_list
 ```
 
 ---
 
 ## ✨ Features
 
-- **Visual Indentation Stack Engine:** Flawless scope tracking based on visual indent hierarchy, preventing brackets collisions from strings, comments, or regex blocks.
-- **Dynamic Callback Method Names:** No generic placeholders. Instead of a vague `.callback` label, it accurately extracts the array operation in use (e.g., `users.map`, `items.filter`, `data.reduce`).
-- **Array & Seed Data Awareness:** Fully supports Array of Objects declarations (e.g., `const seedUsers: User[] = [`), complete with custom array icon identification.
-- **Instant Cursor Reactivity:** Zero lag. Powered by reactive state tracking, updates paths instantaneously upon a single click or selection change.
-- **Smart Language Filter:** Only activates on JavaScript, JSX, TypeScript, and TSX files. Automatically hides itself inside plain texts, HTML, CSS, etc.
-- **TypeScript & Modern JS Aware:** Full support for complex modern JS/TS syntaxes including Explicit Return Type Annotations (`: void`, `: Promise<any>`), `async/await`, `static`, access modifiers (`public`, `private`), generators (`*`), arrow functions, nested callbacks, object literals, and event listeners.
-- **Theme Adaptive UI:** No contrast loss. Colors adjust dynamically to both Light and Dark editor themes. Includes beautifully aligned inline SVG icons matching VS Code color standards.
+- **🚀 Hybrid Parsing Engine (AST + Lookback):** Combines the mechanical accuracy of CodeMirror's Lezer AST parser with an intelligent lookback text-slicing engine, making scope detection bulletproof against syntax variations.
+- **⚡ Pure Method Chaining Awareness:** No generic or messy code blocks in your bar. It safely isolates precise method names inside chains (e.g., extracts just `filter`, `map`, or `reduce` instead of the whole functional block).
+- **🗂️ Fully TypeScript-Safe Array & Object Tracking:** Full awareness for Array Expressions (`[...]`) and Object Expressions (`{...}`). It cleanly bypasses complex TS Type Annotations (`: string[]`, `: Record<string, any>`) and Type Castings (`as const`) to map the parent variable name accurately.
+- **🎨 Premium Thin-Line Icons:** Packed with modern, lightweight geometric SVG icons (`stroke-width="1.3"`) crafted specifically for high-resolution mobile AMOLED screens.
+- **🌈 Modern Matte-Pastel Theme Alignment:** Zero contrast loss. Colors adjust dynamically to both Light and Dark editor themes using a balanced material palette inspired by high-end desktop IDEs.
+- **⏱️ Instant Cursor Reactivity:** Driven by lightweight reactive state updates. Zero-lag path refreshing upon single click, touch, or active text selection changes.
+- **🔒 Smart Environment Filter:** Automatically wakes up within JavaScript, JSX, TypeScript, and TSX configurations, while keeping itself cleanly hidden inside plain text, HTML, CSS, or Markdown files.
 
 ---
 
@@ -41,18 +42,22 @@ Symbols › T Role
 ![Breadcrumbs Preview Dark](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview-dark.png)
 ![Breadcrumbs Preview Light](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview-light.png)
 
-## 🎨 Icon Standards Map
+---
 
-| Symbol Type           | Icon Theme | Color Code | Description                                                   |
-| :-------------------- | :--------: | :--------: | :------------------------------------------------------------ |
-| **Class / Interface** |    `{}`    | `#f1c40f`  | Yellow Class Brackets Box                                     |
-| **Method**            |     📦     | `#9b59b6`  | Purple Method Block                                           |
-| **Function**          |    `ƒ`     | `#3498db`  | Blue Named Function                                           |
-| **Arrow / Callbacks** |    `=>`    | `#1abc9c`  | Teal Variable Function / Array Operations (`.map`, `.filter`) |
-| **Array**             |    `[]`    | `#1abc9c`  | Teal Square Brackets for Array Literals & Object Data Lists   |
-| **Object / Property** |     ☰     | `#1abc9c`  | Teal Block / Object Literal Declarations                      |
-| **Event Listener**    |     ⚡     | `#e84393`  | Pink Lightning Event Tracker                                  |
-| **TS Type Alias**     |    `T`     | `#e67e22`  | Orange TypeScript Type Badge                                  |
+## 🎨 Icon & Theme Standards Map
+
+| Symbol Type           | UI Icon | Color Palette | Description / Node Type Match                                               |
+| :-------------------- | :-----: | :-----------: | :-------------------------------------------------------------------------- |
+| **Class / Interface** |   🔲    |   `#ffcb6b`   | Warm Amber / OOP Bracket Frame Boundary                                     |
+| **Type Alias / Enum** |   📄    |   `#00e5ff`   | Electric Cyan / TS Explicit Types & Definition Specs                        |
+| **Method**            |   📦    |   `#c792ea`   | Soft Lavender Purple / VS-Code Style 3D Method Wireframe                    |
+| **Function**          |    𝑓    |   `#82b1ff`   | Neon Soft Blue / Math Curvature `f(x)` Global Functions                     |
+| **Arrow / Callback**  |   🔄    |   `#4ecc97`   | Mint Fresh Green / Lambda Expressions & Code Branches                       |
+| **Array Expression**  |    🄶    |   `#ffd54f`   | Soft Canary Yellow / Arrays, Seed Data & Tuple Lists                        |
+| **Object / Property** |   🗂️    |   `#c3e88d`   | Pastel Emerald / Structural Object Literals & Map Keys                      |
+| **Control Flow**      |   🕒    |   `#f78c6c`   | Soft Coral Orange / `if-else`, loops (`for`/`while`), `switch`, `try-catch` |
+| **Static Block**      |   🔒    |   `#ff5370`   | Premium Rose Red / Class Initializer Blocks                                 |
+| **JSX Element**       |   ⚛️    |   `#80deea`   | Bright Sky React Blue / UI Components & Helix Fragments                     |
 
 ---
 
@@ -63,30 +68,32 @@ If you are maintaining this plugin locally or building it from source inside you
 1. **Clone the repository:**
 
 ```bash
-git clone https://github.com/CodeNoKami/acode-breadcrumbs.git
+git clone [https://github.com/CodeNoKami/acode-breadcrumbs.git](https://github.com/CodeNoKami/acode-breadcrumbs.git)
 cd acode-breadcrumbs
+
 ```
 
-2. **Install dependencies:**
+2.  **Install dependencies:**
 
 ```bash
 npm install
+
 ```
 
 3.  **Compile and Bundle:**
 
 ```bash
 npm run build
-
 ```
 
-4.  **Output:** The compiled production-grade bundle zip will be exported inside your project directory, ready to be imported into Acode.
+4.  **Output:** The compiled production-grade production ZIP bundle will be generated inside your project directory, fully compressed and optimized, ready to be imported straight into Acode.
 
 ## 🛠️ Tech Stack & Configuration
 
-- **Language:** TypeScript 5+ (Strict Mode Compilation)
-- **Framework integration:** CodeMirror 6 State Handling Architecture & Acode Extension API
-- **Bundler:** Esbuild / Custom configuration bundle pipelines
+- **Language:** TypeScript 5+ (Strict Type Checking)
+- **Parser Core:** CodeMirror 6 Lezer JavaScript/TypeScript Dialect Tree
+- **Framework Integration:** Acode Extension Lifecycle API
+- **Bundler:** Esbuild / Custom lightweight bundling pipelines
 
 ## 📄 License
 
