@@ -53,6 +53,11 @@ export const SCOPE_PATTERNS: PatternRule[] = [
   },
   { type: "array", regex: /\b(?:const|let|var|,)\s+([a-zA-Z0-9_$]+)\s*=\s*\[/ },
   { type: "array", regex: /\b(this\.[a-zA-Z0-9_$]+)\s*(?::[^=]+)?\s*=\s*\[/ },
+  {
+    type: "array",
+    regex:
+      /\b^\s*(?:const|let|var|export)\s+([a-zA-Z0-9_$]+)\s*(?::\s*[a-zA-Z0-9_$<>|[\]{}]+)?\s*=\s*\[/,
+  },
 
   // 2. Objects Assignment
   {

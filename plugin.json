@@ -9,7 +9,7 @@
   "minVersionCode": 1001,
   "license": "MIT",
   "changelogs": "changelogs.md",
-  "keywords": [],
+  "keywords": ["breadcrumbs", "js, ts, tsx, jsx"],
   "price": 0,
   "author": {
     "name": "Lumen",

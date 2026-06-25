@@ -42,11 +42,11 @@ class BreadcrumbsPlugin {
     this.container.id = "acode-breadcrumbs-bar";
 
     this.container.style.cssText = `
-      display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+      display: flex; align-items: center; gap: 6px; padding: 6px 20px 6px 12px;
       background-color: var(--secondary-color, #1e1e1e); 
       color: var(--text-color, var(--primary-text-color, #ffffff));
       font-family: ${appFont}, monospace; font-size: 11px; border-bottom: 1px solid var(--border-color, #333);
-      overflow-x: auto; white-space: nowrap; box-sizing: border-box;
+      overflow-y: hidden; overflow-x: auto; white-space: nowrap; box-sizing: border-box;
       z-index: 10; 
     `;
 
