@@ -18,15 +18,11 @@ export function getScopeType(nodeType: string): string | null {
       return "type";
     case "EnumDeclaration":
       return "enum";
-    case "AmbientFunctionDeclaration":
     case "FunctionDeclaration":
-    case "FunctionExpression":
       return "function";
     case "MethodDeclaration":
     case "MethodType":
       return "method";
-    case "ArrowFunction":
-      return "arrow";
     case "StaticBlock":
       return "static-block";
     case "JSXElement":
@@ -38,11 +34,22 @@ export function getScopeType(nodeType: string): string | null {
     case "IfStatement":
     case "TryStatement":
     case "CatchClause":
+    case "FinallyClause":
       return "control-flow";
-    case "ArrayExpression":
-      return "array";
     case "ObjectExpression":
       return "object";
+    case "ArrayExpression":
+      return "array";
+    case "ArrowFunction":
+      return "arrow";
+    case "FunctionExpression":
+      return "function";
+    case "Property":
+    case "PropertyDeclaration":
+      return "property";
+    case "VariableDeclaration":
+    case "VariableDeclarator":
+      return "variable";
     default:
       return null;
   }
@@ -51,6 +58,14 @@ export function getScopeType(nodeType: string): string | null {
 function getIdentifierName(node: SyntaxNode, code: string): string | null {
   if (!node) return null;
 
+  // 🎯 FIX: Constructor Method ဖြစ်ပါက "constructor" ဟု တိုက်ရိုက်ပြန်ပေးရန်
+  if (
+    node.name === "MethodDeclaration" &&
+    code.slice(node.from, node.to).trim().startsWith("constructor")
+  ) {
+    return "constructor";
+  }
+
   const directNameTokens = [
     "VariableDefinition",
     "TypeDefinition",
@@ -58,6 +73,8 @@ function getIdentifierName(node: SyntaxNode, code: string): string | null {
     "PrivatePropertyDefinition",
     "PropertyName",
     "JSXIdentifier",
+    "VariableName",
+    "Identifier",
   ];
 
   let child = node.firstChild;
@@ -74,33 +91,44 @@ function getJSXTagName(node: SyntaxNode, code: string): string | null {
   const tagNode =
     node.getChild("JSXOpenTag") || node.getChild("JSXSelfClosingTag");
   if (!tagNode) return null;
-  const identifier =
-    tagNode.getChild("JSXOpenTag")?.getChild("JSXIdentifier") ||
-    tagNode.getChild("JSXSelfClosingTag")?.getChild("JSXIdentifier");
+  const identifier = tagNode.getChild("JSXIdentifier");
   if (identifier) return code.slice(identifier.from, identifier.to).trim();
   return "JSX";
 }
 
-/**
- * 🛠️ Helper 1: AST Level Dynamic Root Identifier Extractor
- * Chaining ဖြစ်နေသော CallExpression (e.g., rawItems.filter().map()) များမှ
- * အရင်းမြစ်ဆုံး Object Name (rawItems) ကို AST အတိုင်းသာ လိုက်လံရှာဖွေပေးသည်။
- */
 function findRootCallerName(node: SyntaxNode, code: string): string | null {
   if (!node) return null;
-
   if (node.name === "VariableName" || node.name === "Identifier") {
     return code.slice(node.from, node.to).trim();
   }
-
   if (node.name === "MemberExpression") {
     const firstChild = node.firstChild;
     if (firstChild) return findRootCallerName(firstChild, code);
   }
-
   if (node.name === "CallExpression") {
     const callee = node.getChild("MemberExpression") || node.firstChild;
     if (callee) return findRootCallerName(callee, code);
+  }
+  return null;
+}
+
+function getLookbackName(
+  nodeFrom: number,
+  code: string,
+): { name: string; type: string } | null {
+  const lookbackStart = Math.max(0, nodeFrom - 120);
+  const preamble = code.slice(lookbackStart, nodeFrom);
+
+  const varMatch = preamble.match(
+    /(?:const|let|var|this\.)\s*([a-zA-Z0-9_$]+)(?:\s*:\s*[^=]+)?\s*=\s*$/,
+  );
+  if (varMatch && varMatch[1]) {
+    return { name: varMatch[1], type: "variable" };
+  }
+
+  const propMatch = preamble.match(/([a-zA-Z0-9_$]+)\s*:\s*$/);
+  if (propMatch && propMatch[1]) {
+    return { name: propMatch[1], type: "property" };
   }
 
   return null;
@@ -115,24 +143,140 @@ export function resolveBreadcrumbs(
   try {
     const tree = parser.parse(code);
     let currentNode: SyntaxNode | null = tree.resolveInner(cursorPos, -1);
+    let caughtClause = false;
+    let hasCapturedMethodChain = false; // 🎯 FIX: Chaining အထပ်ထပ် ဖြစ်နေပါက အနီးစပ်ဆုံး တစ်ခုသာ ယူရန် Guard
+
+    const processedNodes = new Set<number>();
 
     while (currentNode) {
       const nodeType = currentNode.name;
       const mappedType = getScopeType(nodeType);
 
-      if (nodeType === "TryStatement") {
-        const hasCatchOrFinally = scopes.some(
-          (s) => s.type === "catch" || s.name === "catch",
-        );
-        if (hasCatchOrFinally) {
-          currentNode = currentNode.parent;
-          continue;
+      if (processedNodes.has(currentNode.from)) {
+        currentNode = currentNode.parent;
+        continue;
+      }
+
+      // ======================================================================
+      // ၁။ TRY / CATCH / FINALLY LOGIC
+      // ======================================================================
+      if (nodeType === "FinallyClause") {
+        caughtClause = true;
+        scopes.unshift({ name: "finally", type: "control-flow" });
+      } else if (nodeType === "CatchClause") {
+        caughtClause = true;
+        scopes.unshift({ name: "catch", type: "control-flow" });
+      } else if (nodeType === "TryStatement") {
+        if (!caughtClause) {
+          scopes.unshift({ name: "try", type: "control-flow" });
+        }
+        caughtClause = false;
+      }
+
+      // ======================================================================
+      // ၂။ CALL EXPRESSIONS & MULTI-LEVEL CHAINING
+      // ======================================================================
+      else if (nodeType === "CallExpression") {
+        const memberExpr = currentNode.getChild("MemberExpression");
+        if (memberExpr) {
+          const propNode = memberExpr.getChild("PropertyName");
+          if (propNode) {
+            const methodName = code.slice(propNode.from, propNode.to).trim();
+
+            if (methodName === "addEventListener") {
+              const leftNode = memberExpr.firstChild;
+              const callerName = leftNode
+                ? findRootCallerName(leftNode, code)
+                : "window";
+              scopes.unshift({
+                name: callerName
+                  ? `${callerName}.addEventListener`
+                  : "addEventListener",
+                type: "listener",
+              });
+            } else if (
+              ["filter", "map", "reduce", "forEach"].includes(methodName)
+            ) {
+              // 🎯 FIX: အကယ်၍ Chain ထဲက အနီးစပ်ဆုံး Method ကို ယူပြီးသားဆိုလျှင် အပြင်ဘက် Chain များကို ကျော်မည်
+              if (!hasCapturedMethodChain) {
+                const leftNode = memberExpr.firstChild;
+                const rootCaller = leftNode
+                  ? findRootCallerName(leftNode, code)
+                  : null;
+                const displayName =
+                  rootCaller && rootCaller !== "return"
+                    ? `${rootCaller}.${methodName}`
+                    : `.${methodName}`;
+
+                scopes.unshift({ name: displayName, type: "method-chain" });
+                hasCapturedMethodChain = true; // Chain တစ်ခု မိသွားပြီဖြစ်၍ အပေါ်ထပ်များကို ပိတ်လိုက်သည်
+              }
+            }
+          }
         }
       }
 
-      if (mappedType) {
+      // ======================================================================
+      // ၃။ EXPRESSIONS UP-LINK MATCHING (HYBRID AST + LOOKBACK)
+      // ======================================================================
+      else if (
+        [
+          "ObjectExpression",
+          "ArrayExpression",
+          "ArrowFunction",
+          "FunctionExpression",
+        ].includes(nodeType)
+      ) {
+        let nameFound = false;
+        let parent = currentNode.parent;
+
+        if (parent && parent.name === "VariableDeclaration") {
+          parent = parent.getChild("VariableDeclarator") || parent;
+        }
+
+        if (
+          parent &&
+          (parent.name === "VariableDeclarator" ||
+            parent.name === "Property" ||
+            parent.name === "PropertyDeclaration")
+        ) {
+          const nodeName = getIdentifierName(parent, code);
+          if (nodeName) {
+            let typeOverride = mappedType!;
+            if (nodeType === "ObjectExpression") typeOverride = "object";
+            else if (nodeType === "ArrayExpression") typeOverride = "array";
+            else if (nodeType === "ArrowFunction") typeOverride = "arrow";
+            else if (nodeType === "FunctionExpression")
+              typeOverride = "function";
+
+            scopes.unshift({ name: nodeName, type: typeOverride });
+            processedNodes.add(parent.from);
+            processedNodes.add(currentNode.parent?.from || 0);
+            nameFound = true;
+          }
+        }
+
+        if (!nameFound) {
+          const fallback = getLookbackName(currentNode.from, code);
+          if (fallback) {
+            let typeOverride = fallback.type;
+            if (nodeType === "ObjectExpression") typeOverride = "object";
+            else if (nodeType === "ArrayExpression") typeOverride = "array";
+            else if (nodeType === "ArrowFunction") typeOverride = "arrow";
+            else if (nodeType === "FunctionExpression")
+              typeOverride = "function";
+
+            scopes.unshift({ name: fallback.name, type: typeOverride });
+            nameFound = true;
+          }
+        }
+      }
+
+      // ======================================================================
+      // ၄။ NATIVE DECLARATIONS, FIELDS AND CONTROL FLOWS
+      // ======================================================================
+      else if (mappedType) {
         let nodeName: string | null = null;
-        let typeOverride = mappedType;
 
         if (
           ["class", "interface", "type", "enum", "function", "method"].includes(
@@ -140,27 +284,49 @@ export function resolveBreadcrumbs(
           )
         ) {
           nodeName = getIdentifierName(currentNode, code);
-
-          if (
-            !nodeName &&
-            (nodeType === "FunctionExpression" || nodeType === "ArrowFunction")
-          ) {
-            let parent = currentNode.parent;
-            if (
-              parent &&
-              (parent.name === "Property" ||
-                parent.name === "PropertyDeclaration")
-            ) {
-              nodeName = getIdentifierName(parent, code);
+        } else if (
+          nodeType === "VariableDeclaration" ||
+          nodeType === "VariableDeclarator"
+        ) {
+          const targetNode =
+            nodeType === "VariableDeclaration"
+              ? currentNode.getChild("VariableDeclarator")
+              : currentNode;
+          if (targetNode) {
+            nodeName = getIdentifierName(targetNode, code);
+            if (nodeName) {
+              const childExpr =
+                targetNode.getChild("ObjectExpression") ||
+                targetNode.getChild("ArrowFunction") ||
+                targetNode.getChild("FunctionExpression") ||
+                targetNode.getChild("ArrayExpression");
+              if (childExpr) {
+                currentNode = currentNode.parent;
+                continue;
+              }
+              scopes.unshift({ name: nodeName, type: "variable" });
+              processedNodes.add(currentNode.from);
             }
+          }
+        } else if (
+          nodeType === "Property" ||
+          nodeType === "PropertyDeclaration"
+        ) {
+          nodeName = getIdentifierName(currentNode, code);
+          if (nodeName) {
+            let finalType = "property";
+            if (currentNode.getChild("Block")) finalType = "method";
+            scopes.unshift({ name: nodeName, type: finalType });
           }
         } else if (mappedType === "static-block") {
           nodeName = "static {}";
         } else if (mappedType === "jsx") {
           nodeName = getJSXTagName(currentNode, code);
-        } else if (mappedType === "control-flow") {
+        } else if (
+          mappedType === "control-flow" &&
+          nodeType !== "TryStatement"
+        ) {
           if (nodeType === "IfStatement") {
-            // 🎯 Child-Priority Check: အတွင်းထဲက block တစ်ခုကို မိပြီးသားဆိုလျှင် parent block များကို skip မည်
             const hasChildIf = scopes.some(
               (s) =>
                 s.type === "control-flow" &&
@@ -171,9 +337,6 @@ export function resolveBreadcrumbs(
               continue;
             }
 
-            // 💡 True Lezer AST Structural Evaluation:
-            // လက်ရှိ IfStatement သည် မိခင် IfStatement ၏ 'else' branch နေရာတွင် ဝင်နေသော
-            // ညှပ်ပူးညှပ်ပိတ် node ဖြစ်ပါက ၎င်းသည် တကယ့် "else-if" ဖြစ်သည်။
             const parentNode = currentNode.parent;
             const isInsideParentElseBranch =
               parentNode &&
@@ -184,14 +347,11 @@ export function resolveBreadcrumbs(
             if (isInsideParentElseBranch) {
               nodeName = "else-if";
             } else {
-              // မိခင်ရဲ့ else branch ထဲက ထပ်ဆင့် if မဟုတ်တော့ဘူးဆိုလျှင်...
-              // လက်ရှိ node ကိုယ်တိုင်ရဲ့ else keyword ရဲ့ နောက်ဘက်တွင် cursor ရောက်နေပါက တကယ့် "else" သက်သက်ဖြစ်သည်။
               const elseKeywordNode = currentNode.getChild("else");
-
               if (elseKeywordNode && cursorPos >= elseKeywordNode.from) {
-                // ၎င်း else keyword ၏ နောက်ကပ်လျက်တွင် IfStatement တိုက်ရိုက်မရှိတော့လျှင် တကယ့် "else" အစစ်ဖြစ်သည်။
-                const hasNextIf = currentNode.getChild("IfStatement");
-                nodeName = hasNextIf ? "else-if" : "else";
+                nodeName = currentNode.getChild("IfStatement")
+                  ? "else-if"
+                  : "else";
               } else {
                 nodeName = "if";
               }
@@ -203,121 +363,82 @@ export function resolveBreadcrumbs(
               .toLowerCase();
             if (nodeName === "catchclause") nodeName = "catch";
           }
-        } else if (mappedType === "array" || mappedType === "object") {
-          const lookbackStart = Math.max(0, currentNode.from - 100);
-          const preamble = code.slice(lookbackStart, currentNode.from);
-
-          const varMatch = preamble.match(
-            /(?:const|let|var|this\.)\s*([a-zA-Z0-9_$]+)(?:\s*:\s*[^=]+)?\s*=\s*$/,
-          );
-          const propMatch = preamble.match(/([a-zA-Z0-9_$]+)\s*:\s*$/);
-
-          if (varMatch && varMatch[1]) {
-            nodeName = varMatch[1];
-          } else if (propMatch && propMatch[1]) {
-            nodeName = propMatch[1];
-          } else {
-            let parent = currentNode.parent;
-            if (
-              parent &&
-              (parent.name === "VariableDeclarator" ||
-                parent.name === "Property")
-            ) {
-              nodeName = getIdentifierName(parent, code);
-            }
-          }
-
-          if (!nodeName) {
-            currentNode = currentNode.parent;
-            continue;
-          }
-        } else if (mappedType === "arrow") {
-          // 💡 Fix 2 & 3: AST Controlled Scope Extractor (Regex အလုံးစုံ ဖယ်ရှားပြီးသား)
-          let callParent: SyntaxNode | null = currentNode.parent;
-
-          while (
-            callParent &&
-            callParent.name !== "Block" &&
-            callParent.name !== "FunctionDeclaration"
-          ) {
-            if (callParent.name === "CallExpression") {
-              const callee = callParent.getChild("MemberExpression");
-              if (callee) {
-                const propNode = callee.getChild("PropertyName");
-                if (propNode) {
-                  const methodName = code
-                    .slice(propNode.from, propNode.to)
-                    .trim();
-
-                  // Target Method စာရင်းများ
-                  const isArrayMethod = [
-                    "filter",
-                    "map",
-                    "forEach",
-                    "reduce",
-                    "find",
-                    "some",
-                    "every",
-                  ].includes(methodName);
-                  const isListener = [
-                    "addEventListener",
-                    "removeEventListener",
-                  ].includes(methodName);
-
-                  if (isArrayMethod || isListener) {
-                    typeOverride = isListener ? "listener" : "arrow";
-
-                    // AST Dynamic Root Identifier ဆွဲထုတ်ခြင်း
-                    const rootCaller = findRootCallerName(callee, code);
-                    nodeName =
-                      rootCaller && rootCaller !== "return"
-                        ? `${rootCaller}.${methodName}`
-                        : methodName;
-                    break;
-                  }
-                }
-              }
-            }
-            callParent = callParent.parent;
-          }
-
-          // Fallback variable assign bindings (အကယ်၍ ရိုးရိုး function assigning ဖြစ်လျှင်)
-          if (!nodeName) {
-            const lookbackStart = Math.max(0, currentNode.from - 60);
-            const preamble = code.slice(lookbackStart, currentNode.from);
-            const varMatch = preamble.match(
-              /(?:const|let|var|this\.)\s*([a-zA-Z0-9_$]+)\s*=\s*$/,
-            );
-            const propMatch = preamble.match(/([a-zA-Z0-9_$]+)\s*:\s*$/);
-
-            if (varMatch && varMatch[1]) {
-              nodeName = varMatch[1];
-              typeOverride = "function";
-            } else if (propMatch && propMatch[1]) {
-              nodeName = propMatch[1];
-              typeOverride = "function";
-            }
-          }
-
-          if (!nodeName) {
-            currentNode = currentNode.parent;
-            continue;
-          }
         }
 
-        if (nodeName) {
-          const isDuplicate = scopes.some((s) => s.name === nodeName);
-          if (!isDuplicate) {
-            scopes.unshift({ name: nodeName, type: typeOverride });
-          }
+        if (
+          nodeName &&
+          ![
+            "Property",
+            "PropertyDeclaration",
+            "VariableDeclaration",
+            "VariableDeclarator",
+          ].includes(nodeType)
+        ) {
+          scopes.unshift({ name: nodeName, type: mappedType });
         }
       }
 
       currentNode = currentNode.parent;
     }
   } catch (err) {
-    console.error("Breadcrumbs parse error:", err);
+    console.error("Breadcrumbs Hybrid Master Engine Error:", err);
   }
 
-  return scopes;
+  return scopes.filter(
+    (v, i, a) =>
+      a.findIndex((t) => t.name === v.name && t.type === v.type) === i,
+  );
 }
+
+// ============================================================================
+// 🎬 ACODE BREADCRUMBS - STANDALONE LIVE CODE BLOCK DECODER (DEBUG WRAPPER)
+// ============================================================================
+export function debugCursorAST(code: string, cursorPos: number): void {
+  try {
+    const tree = parser.parse(code);
+    let tracerNode: SyntaxNode | null = tree.resolveInner(cursorPos, -1);
+
+    if (!tracerNode) {
+      console.log("⚠️ No AST Node found at the current cursor position.");
+      return;
+    }
+
+    const tableData = [];
+    let level = 0;
+
+    while (tracerNode) {
+      // ၁။ လက်ရှိ Node ရဲ့ စာသားအပြည့်အစုံကို Slice ဖြတ်ယူခြင်း
+      const rawCodeBlock = code.slice(tracerNode.from, tracerNode.to).trim();
+
+      // ၂။ Console မှာ မျက်စိမရှုပ်အောင် စာသားအရှည်ကြီးဖြစ်နေရင် ချုံ့ပစ်ခြင်း
+      let cleanCodeSnippet = rawCodeBlock.replace(/\s+/g, " ");
+      if (cleanCodeSnippet.length > 55) {
+        cleanCodeSnippet =
+          cleanCodeSnippet.slice(0, 50) + " ... " + cleanCodeSnippet.slice(-10);
+      }
+
+      // ၃။ Table Row အဖြစ် Data စုဆောင်းခြင်း
+      tableData.push({
+        "Layer (RTL)": `[${level++}]`,
+        "AST Node Name": tracerNode.name,
+        "Range (From-To)": `${tracerNode.from} - ${tracerNode.to}`,
+        "Real Code Block": cleanCodeSnippet,
+      });
+
+      // ၄။ အပြင်ဘက် Parent ဧရိယာသို့ တစ်ဆင့်ချင်း ဆက်တက်သွားခြင်း
+      tracerNode = tracerNode.parent;
+    }
+
+    // 🎯 Visual Output: Table အား Console တွင် တိုက်ရိုက် ရိုက်ထုတ်ပြသခြင်း
+    console.log(
+      `\n🎯 --- BREADCRUMBS CURSOR POSITION DECODE [Pos: ${cursorPos}] ---`,
+    );
+    console.table(tableData);
+    console.log(
+      "-------------------------------------------------------------\n",
+    );
+  } catch (debugError) {
+    console.error("❌ Debug Block Decoder Error:", debugError);
+  }
+}
+// ============================================================================

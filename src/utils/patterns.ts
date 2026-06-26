@@ -20,6 +20,10 @@ export function getColorByType(type: string): string {
       return "#c3e88d"; // Light Olive / Pastel Emerald
     case "array":
       return "#ffd54f"; // Soft Canary Yellow
+    case "variable":
+      return "#7ee787"; // 🟢 Fresh Ecosystem Leaf Green (For Variables)
+    case "method-chain":
+      return "#a371f7"; // 🍇 Elegant Deep Violet for Fluid Chain Methods
     case "control-flow":
     case "for":
     case "while":
@@ -29,6 +33,7 @@ export function getColorByType(type: string): string {
     case "switch":
     case "try":
     case "catch":
+    case "finally":
       return "#f78c6c"; // Soft Coral Orange
     case "static-block":
       return "#ff5370"; // Premium Rose Red
@@ -78,6 +83,14 @@ export function getIconByType(type: string): string {
       // Modern Structural Bullet Object Node Icon
       return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg>`;
 
+    case "variable":
+      // 🟢 Minimalist Box-Identity 'V' Shape Variable Token Icon
+      return `<svg ${svgStyle}><circle cx="8" cy="8" r="6.5"/><path d="M5.5 6.5L8 11.5l2.5-5"/></svg>`;
+
+    case "method-chain":
+      // 🍇 Modern Pipeline Stream Icon (Transforming / Fluid Chain Data Flow)
+      return `<svg ${svgStyle}><path d="M2 3h5v4H2zm7 6h5v4H9zM4.5 7v4H9M11.5 3v6h-2.5"/></svg>`;
+
     case "control-flow":
     case "for":
     case "while":
@@ -87,6 +100,7 @@ export function getIconByType(type: string): string {
     case "switch":
     case "try":
     case "catch":
+    case "finally":
       // Dynamic Circular Direction/Loop Icon
       return `<svg ${svgStyle}><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5V8l2 2"/></svg>`;
 
@@ -99,7 +113,7 @@ export function getIconByType(type: string): string {
       return `<svg ${svgStyle}><ellipse cx="8" cy="8" rx="6.5" ry="2.5" transform="rotate(30 8 8)"/><ellipse cx="8" cy="8" rx="6.5" ry="2.5" transform="rotate(-30 8 8)"/><circle cx="8" cy="8" r="1" fill="${color}"/></svg>`;
 
     case "listener":
-      // ⚡ Sharp Lightning Web Event Hook Icon (အရောင်အသစ် ဖြစ်သွားအောင် fill တိုက်ရိုက်ထည့်သွင်းပေးထားပါသည်)
+      // ⚡ Sharp Lightning Web Event Hook Icon (Event Pink Filler Included)
       return `<svg ${svgStyle} fill="${color}"><path d="M9.5 1.5L2.5 9h5v5.5l7-7.5h-5z"/></svg>`;
 
     default:
