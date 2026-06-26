@@ -137,7 +137,7 @@ class BreadcrumbsPlugin {
     const prefix = document.createElement("span");
     prefix.style.cssText =
       "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff));";
-    const breadcrumbsIconHtml = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: var(--text-color, var(--primary-text-color, #ffffff)); vertical-align: middle; margin-right: 5px;"><path d="M1 3h4v1H1V3zm5 2.5l2-2 2 2v1l-1.5-1.5V9h-1V5l-1.5 1.5v-1zM11 7h4v1h-4V7zm2 4h2v1h-2v-1zm-6 2h4v1H7v-1zM2 9h3v1H2V9z"/></svg>`;
+    const breadcrumbsIconHtml = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: none; stroke: var(--text-color, var(--primary-text-color, #ffffff)); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; margin-right: 5px;"><path d="M2 4h5v4H2zM9 4h5v2H9zm0 6h5v2H9zm-7 2h5v2H2z"/><path d="M4.5 8v4M11.5 6v4"/></svg>`;
 
     prefix.innerHTML = `${breadcrumbsIconHtml}Breadcrumbs`;
     containerEl.appendChild(prefix);
@@ -152,8 +152,10 @@ class BreadcrumbsPlugin {
     if (validScopes.length === 0) {
       const globalSpan = document.createElement("span");
       globalSpan.style.cssText =
-        "display: inline-flex; align-items: center; opacity: 0.8;";
-      globalSpan.textContent = "Global Scope";
+        "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff));";
+
+      const globalIconHtml = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: none; stroke: var(--text-color, var(--primary-text-color, #ffffff)); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; margin-right: 5px;"><circle cx="8" cy="8" r="7"/><path d="M1 8h14M8 1a12 12 0 0 1 0 14M8 1a12 12 0 0 0 0 14"/></svg>`;
+      globalSpan.innerHTML = `${globalIconHtml}Global`;
       containerEl.appendChild(globalSpan);
     } else {
       const fragment = document.createDocumentFragment();

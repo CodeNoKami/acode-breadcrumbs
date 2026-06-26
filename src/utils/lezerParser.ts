@@ -75,22 +75,35 @@ function getJSXTagName(node: SyntaxNode, code: string): string | null {
     node.getChild("JSXOpenTag") || node.getChild("JSXSelfClosingTag");
   if (!tagNode) return null;
   const identifier =
-    tagNode.getChild("JSXIdentifier") || tagNode.getChild("JSXBuiltin");
+    tagNode.getChild("JSXOpenTag")?.getChild("JSXIdentifier") ||
+    tagNode.getChild("JSXSelfClosingTag")?.getChild("JSXIdentifier");
   if (identifier) return code.slice(identifier.from, identifier.to).trim();
   return "JSX";
 }
 
-function getPureMethodName(node: SyntaxNode, code: string): string | null {
-  const callee = node.firstChild;
-  if (!callee) return null;
+/**
+ * 🛠️ Helper 1: AST Level Dynamic Root Identifier Extractor
+ * Chaining ဖြစ်နေသော CallExpression (e.g., rawItems.filter().map()) များမှ
+ * အရင်းမြစ်ဆုံး Object Name (rawItems) ကို AST အတိုင်းသာ လိုက်လံရှာဖွေပေးသည်။
+ */
+function findRootCallerName(node: SyntaxNode, code: string): string | null {
+  if (!node) return null;
 
-  if (callee.name === "MemberExpression") {
-    const propNode = callee.getChild("PropertyName");
-    if (propNode) {
-      return code.slice(propNode.from, propNode.to).trim();
-    }
+  if (node.name === "VariableName" || node.name === "Identifier") {
+    return code.slice(node.from, node.to).trim();
   }
-  return code.slice(callee.from, callee.to).trim();
+
+  if (node.name === "MemberExpression") {
+    const firstChild = node.firstChild;
+    if (firstChild) return findRootCallerName(firstChild, code);
+  }
+
+  if (node.name === "CallExpression") {
+    const callee = node.getChild("MemberExpression") || node.firstChild;
+    if (callee) return findRootCallerName(callee, code);
+  }
+
+  return null;
 }
 
 export function resolveBreadcrumbs(
@@ -127,30 +140,76 @@ export function resolveBreadcrumbs(
           )
         ) {
           nodeName = getIdentifierName(currentNode, code);
+
+          if (
+            !nodeName &&
+            (nodeType === "FunctionExpression" || nodeType === "ArrowFunction")
+          ) {
+            let parent = currentNode.parent;
+            if (
+              parent &&
+              (parent.name === "Property" ||
+                parent.name === "PropertyDeclaration")
+            ) {
+              nodeName = getIdentifierName(parent, code);
+            }
+          }
         } else if (mappedType === "static-block") {
           nodeName = "static {}";
         } else if (mappedType === "jsx") {
           nodeName = getJSXTagName(currentNode, code);
         } else if (mappedType === "control-flow") {
-          nodeName = nodeType
-            .replace("Statement", "")
-            .replace("Clause", "")
-            .toLowerCase();
-          if (nodeName === "catchclause") nodeName = "catch";
-        }
-        // 🔧 Ultimate Hybrid Lookback Engine for BOTH Arrays & Objects
-        else if (mappedType === "array" || mappedType === "object") {
-          // Bracket ([ သို့မဟုတ် {) ပွင့်ခဲ့သည့် နေရာအရှေ့မှ ကုဒ်စာလုံး ၁၀၀ ကို လှမ်းဖတ်သည်
+          if (nodeType === "IfStatement") {
+            // 🎯 Child-Priority Check: အတွင်းထဲက block တစ်ခုကို မိပြီးသားဆိုလျှင် parent block များကို skip မည်
+            const hasChildIf = scopes.some(
+              (s) =>
+                s.type === "control-flow" &&
+                ["if", "else-if", "else"].includes(s.name),
+            );
+            if (hasChildIf) {
+              currentNode = currentNode.parent;
+              continue;
+            }
+
+            // 💡 True Lezer AST Structural Evaluation:
+            // လက်ရှိ IfStatement သည် မိခင် IfStatement ၏ 'else' branch နေရာတွင် ဝင်နေသော
+            // ညှပ်ပူးညှပ်ပိတ် node ဖြစ်ပါက ၎င်းသည် တကယ့် "else-if" ဖြစ်သည်။
+            const parentNode = currentNode.parent;
+            const isInsideParentElseBranch =
+              parentNode &&
+              parentNode.name === "IfStatement" &&
+              currentNode.from >
+                (parentNode.getChild("else")?.from ?? Infinity);
+
+            if (isInsideParentElseBranch) {
+              nodeName = "else-if";
+            } else {
+              // မိခင်ရဲ့ else branch ထဲက ထပ်ဆင့် if မဟုတ်တော့ဘူးဆိုလျှင်...
+              // လက်ရှိ node ကိုယ်တိုင်ရဲ့ else keyword ရဲ့ နောက်ဘက်တွင် cursor ရောက်နေပါက တကယ့် "else" သက်သက်ဖြစ်သည်။
+              const elseKeywordNode = currentNode.getChild("else");
+
+              if (elseKeywordNode && cursorPos >= elseKeywordNode.from) {
+                // ၎င်း else keyword ၏ နောက်ကပ်လျက်တွင် IfStatement တိုက်ရိုက်မရှိတော့လျှင် တကယ့် "else" အစစ်ဖြစ်သည်။
+                const hasNextIf = currentNode.getChild("IfStatement");
+                nodeName = hasNextIf ? "else-if" : "else";
+              } else {
+                nodeName = "if";
+              }
+            }
+          } else {
+            nodeName = nodeType
+              .replace("Statement", "")
+              .replace("Clause", "")
+              .toLowerCase();
+            if (nodeName === "catchclause") nodeName = "catch";
+          }
+        } else if (mappedType === "array" || mappedType === "object") {
           const lookbackStart = Math.max(0, currentNode.from - 100);
           const preamble = code.slice(lookbackStart, currentNode.from);
 
-          // Pattern 1: Variable assignments (e.g., const config: MyType = { ... })
-          // TypeScript specifications ပါလာလျှင်ပါ ကျော်ဖြတ်နိုင်ရန် Regex ကို Multi-line flag အနည်းငယ်ညှိထားသည်
           const varMatch = preamble.match(
             /(?:const|let|var|this\.)\s*([a-zA-Z0-9_$]+)(?:\s*:\s*[^=]+)?\s*=\s*$/,
           );
-
-          // Pattern 2: Nested Object keys သို့မဟုတ် Destructured keys (e.g., userList: [ ... ])
           const propMatch = preamble.match(/([a-zA-Z0-9_$]+)\s*:\s*$/);
 
           if (varMatch && varMatch[1]) {
@@ -158,7 +217,6 @@ export function resolveBreadcrumbs(
           } else if (propMatch && propMatch[1]) {
             nodeName = propMatch[1];
           } else {
-            // Fallback: အကယ်၍ standalone inline structure သက်သက်ဖြစ်ပါက AST တိုင်း ရှာမည်
             let parent = currentNode.parent;
             if (
               parent &&
@@ -169,38 +227,75 @@ export function resolveBreadcrumbs(
             }
           }
 
-          // အမည်တပ်မထားသော သာမန် standalone array/object (ဥပမာ parameter ထဲက ကောင်လေးတွေ) ဖြစ်ပါက ကျော်မည်
           if (!nodeName) {
             currentNode = currentNode.parent;
             continue;
           }
         } else if (mappedType === "arrow") {
-          const lookbackStart = Math.max(0, currentNode.from - 80);
-          const preamble = code.slice(lookbackStart, currentNode.from);
+          // 💡 Fix 2 & 3: AST Controlled Scope Extractor (Regex အလုံးစုံ ဖယ်ရှားပြီးသား)
+          let callParent: SyntaxNode | null = currentNode.parent;
 
-          const varMatch = preamble.match(
-            /(?:const|let|var|this\.)\s*([a-zA-Z0-9_$]+)\s*=\s*$/,
-          );
-          const propMatch = preamble.match(/([a-zA-Z0-9_$]+)\s*:\s*$/);
+          while (
+            callParent &&
+            callParent.name !== "Block" &&
+            callParent.name !== "FunctionDeclaration"
+          ) {
+            if (callParent.name === "CallExpression") {
+              const callee = callParent.getChild("MemberExpression");
+              if (callee) {
+                const propNode = callee.getChild("PropertyName");
+                if (propNode) {
+                  const methodName = code
+                    .slice(propNode.from, propNode.to)
+                    .trim();
 
-          if (varMatch && varMatch[1]) {
-            nodeName = varMatch[1];
-            typeOverride = "function";
-          } else if (propMatch && propMatch[1]) {
-            nodeName = propMatch[1];
-            typeOverride = "function";
-          } else {
-            let parent = currentNode.parent;
-            while (parent) {
-              if (parent.name === "CallExpression") {
-                const pureName = getPureMethodName(parent, code);
-                if (pureName) {
-                  nodeName = pureName;
-                  typeOverride = "function";
+                  // Target Method စာရင်းများ
+                  const isArrayMethod = [
+                    "filter",
+                    "map",
+                    "forEach",
+                    "reduce",
+                    "find",
+                    "some",
+                    "every",
+                  ].includes(methodName);
+                  const isListener = [
+                    "addEventListener",
+                    "removeEventListener",
+                  ].includes(methodName);
+
+                  if (isArrayMethod || isListener) {
+                    typeOverride = isListener ? "listener" : "arrow";
+
+                    // AST Dynamic Root Identifier ဆွဲထုတ်ခြင်း
+                    const rootCaller = findRootCallerName(callee, code);
+                    nodeName =
+                      rootCaller && rootCaller !== "return"
+                        ? `${rootCaller}.${methodName}`
+                        : methodName;
+                    break;
+                  }
                 }
-                break;
               }
-              parent = parent.parent;
+            }
+            callParent = callParent.parent;
+          }
+
+          // Fallback variable assign bindings (အကယ်၍ ရိုးရိုး function assigning ဖြစ်လျှင်)
+          if (!nodeName) {
+            const lookbackStart = Math.max(0, currentNode.from - 60);
+            const preamble = code.slice(lookbackStart, currentNode.from);
+            const varMatch = preamble.match(
+              /(?:const|let|var|this\.)\s*([a-zA-Z0-9_$]+)\s*=\s*$/,
+            );
+            const propMatch = preamble.match(/([a-zA-Z0-9_$]+)\s*:\s*$/);
+
+            if (varMatch && varMatch[1]) {
+              nodeName = varMatch[1];
+              typeOverride = "function";
+            } else if (propMatch && propMatch[1]) {
+              nodeName = propMatch[1];
+              typeOverride = "function";
             }
           }
 

@@ -61,6 +61,18 @@ Symbols › 📄 UserRole › 🗂️ config_list
 
 ---
 
+## ⚠️ Caution & Continuous Tuning
+
+> [!NOTE]
+> Since this plugin relies closely on **CodeMirror's Lezer AST Node Traversal**, complex code syntax combinations can sometimes result in minor path variations:
+>
+> - **Multi-level `else-if` chains:** Deep nesting layout can occasionally display parent scopes differently depending on code indentation and formatting.
+> - **Complex Method Chaining:** Intermittent stripping of parent identifiers may occur within heavily nested `.filter().map()` statements if mixed with inline arguments or callbacks.
+>
+> We are continuously refining the structural lookup engines. If you encounter an unexpected breadcrumb path, please **open an issue** with a snippet of your code structure to help us make the parser bulletproof! 🚀
+
+---
+
 ## 📦 Installation & Build
 
 If you are maintaining this plugin locally or building it from source inside your environment:
@@ -68,7 +80,7 @@ If you are maintaining this plugin locally or building it from source inside you
 1. **Clone the repository:**
 
 ```bash
-git clone [https://github.com/CodeNoKami/acode-breadcrumbs.git](https://github.com/CodeNoKami/acode-breadcrumbs.git)
+git clone https://github.com/CodeNoKami/acode-breadcrumbs.git
 cd acode-breadcrumbs
 
 ```

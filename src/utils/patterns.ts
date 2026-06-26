@@ -12,8 +12,9 @@ export function getColorByType(type: string): string {
       return "#82b1ff"; // Neon Soft Blue
     case "arrow":
     case "callback":
-    case "listener":
       return "#4ecc97"; // Mint Fresh Green
+    case "listener":
+      return "#e84393"; // ⚡ Premium Event Pink (README Standard Palette)
     case "object":
     case "objectKey":
       return "#c3e88d"; // Light Olive / Pastel Emerald
@@ -23,6 +24,7 @@ export function getColorByType(type: string): string {
     case "for":
     case "while":
     case "if":
+    case "else-if": // 💡 Fix: if-else context ပါ အရောင်တူ သတ်မှတ်ပေးခြင်း
     case "else":
     case "switch":
     case "try":
@@ -80,6 +82,7 @@ export function getIconByType(type: string): string {
     case "for":
     case "while":
     case "if":
+    case "else-if": // 💡 Fix: if-else block အတွက် အိုင်ကွန် ချိန်ညှိခြင်း
     case "else":
     case "switch":
     case "try":
@@ -96,8 +99,8 @@ export function getIconByType(type: string): string {
       return `<svg ${svgStyle}><ellipse cx="8" cy="8" rx="6.5" ry="2.5" transform="rotate(30 8 8)"/><ellipse cx="8" cy="8" rx="6.5" ry="2.5" transform="rotate(-30 8 8)"/><circle cx="8" cy="8" r="1" fill="${color}"/></svg>`;
 
     case "listener":
-      // Sharp Lightning Web Event Hook Icon
-      return `<svg ${svgStyle}><path d="M9.5 1.5L2.5 9h5v5.5l7-7.5h-5z"/></svg>`;
+      // ⚡ Sharp Lightning Web Event Hook Icon (အရောင်အသစ် ဖြစ်သွားအောင် fill တိုက်ရိုက်ထည့်သွင်းပေးထားပါသည်)
+      return `<svg ${svgStyle} fill="${color}"><path d="M9.5 1.5L2.5 9h5v5.5l7-7.5h-5z"/></svg>`;
 
     default:
       // Terminal Default Standard Block Icon
