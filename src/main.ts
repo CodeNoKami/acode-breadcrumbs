@@ -72,8 +72,6 @@ class BreadcrumbsPlugin {
   };
 
   private injectUpdateListener(editor: EditorView) {
-    // 💡 ကုဒ်ဟောင်းထဲက အကောင်းဆုံးဖြစ်တဲ့ အလုပ်အမြန်ဆုံး Native Global Selection Listener အား ပြန်လည်အသုံးပြုခြင်း
-    // စိတ်မချရသော registerExtension စနစ်ကြီးအား လုံးဝဖယ်ထုတ်ပစ်လိုက်သည်
     document.removeEventListener(
       "selectionchange",
       this.onGlobalSelectionChange,
@@ -90,7 +88,6 @@ class BreadcrumbsPlugin {
 
   private onGlobalSelectionChange = () => {
     const editor = editorManager.editor;
-    // 💡 focus timing အောက်မကျစေရန် စစ်ဆေးချက်ကို ရိုးရှင်းအောင် ကုဒ်ဟောင်းအတိုင်း ပြန်ပြင်ဆင်သည်
     if (editor) {
       this.updateBreadcrumbs(editor);
     }
@@ -99,7 +96,6 @@ class BreadcrumbsPlugin {
   private onEditorUpdate = () => {
     const editor = editorManager.editor;
     if (editor) {
-      // ၁၀ မီလီစက္ကန့်အတွင်း ချက်ချင်း update ဆွဲခေါ်ခြင်း
       setTimeout(() => this.updateBreadcrumbs(editor), 10);
     }
   };
@@ -127,7 +123,7 @@ class BreadcrumbsPlugin {
     const pos = state.selection.main.head;
     const fullCode = state.doc.toString();
 
-    // 🚀 Lezer Parser Engine သို့ ပေးပို့၍ တိကျသော Structural scopes များကို ရယူခြင်း
+    // 🚀 Restored to pure standalone call
     const validScopes = resolveBreadcrumbs(fullCode, pos);
 
     while (containerEl.firstChild) {

@@ -1,123 +1,135 @@
+/**
+ * Resolves a hexadecimal color token from Tailwind 500 Palette depending on the node type
+ * @param type - The registered layout scope type string
+ * @returns HEX color string or functional CSS variable fallback
+ */
 export function getColorByType(type: string): string {
   switch (type) {
+    // 🧱 OOP Structures (Tailwind Amber & Violet)
     case "class":
     case "interface":
-      return "#ffcb6b"; // Modern Warm Amber / Gold
+      return "#f59e0b"; // Tailwind Amber 500 (Warm Vivid Gold)
+    case "method":
+      return "#8b5cf6"; // Tailwind Violet 500 (Vivid Royal Purple)
+    case "function":
+      return "#3b82f6"; // Tailwind Blue 500 (Vivid Core Blue)
+
+    // 🔗 Fluid Method Chains (Tailwind Purple) - Explicitly Added!
+    case "method-chain":
+      return "#a855f7"; // Tailwind Purple 500 (Bright Neon Purple)
+
+    // 🏷️ Types & Properties (Tailwind Cyan & Sky)
     case "type":
     case "enum":
-      return "#00e5ff"; // Vibrant Electric Cyan
-    case "method":
-      return "#c792ea"; // Soft Lavender Purple (VS Code Style)
-    case "function":
-      return "#82b1ff"; // Neon Soft Blue
-    case "arrow":
-    case "callback":
-      return "#4ecc97"; // Mint Fresh Green
-    case "listener":
-      return "#e84393"; // ⚡ Premium Event Pink (README Standard Palette)
+      return "#06b6d4"; // Tailwind Cyan 500 (Electric Cyan)
+    case "property":
+      return "#0ea5e9"; // Tailwind Sky 500 (Vivid Sky Blue)
+
+    // 📦 Data Structures (Tailwind Lime & Yellow)
     case "object":
     case "objectKey":
-      return "#c3e88d"; // Light Olive / Pastel Emerald
+      return "#84cc16"; // Tailwind Lime 500 (Vivid Fresh Lime)
     case "array":
-      return "#ffd54f"; // Soft Canary Yellow
+      return "#eab308"; // Tailwind Yellow 500 (Vivid Canary Yellow)
     case "variable":
-      return "#7ee787"; // 🟢 Fresh Ecosystem Leaf Green (For Variables)
-    case "method-chain":
-      return "#a371f7"; // 🍇 Elegant Deep Violet for Fluid Chain Methods
-    case "control-flow":
+      return "#22c55e"; // Tailwind Green 500 (Standard Ecosystem Green)
+
+    // 🚀 Execution Blocks & Events (Tailwind Emerald, Rose & Pink)
+    case "arrow":
+    case "callback":
+      return "#10b981"; // Tailwind Emerald 500 (Mint Green)
+    case "listener":
+      return "#f43f5e"; // Tailwind Rose 500 (Vivid Event Rose)
+    case "static-block":
+      return "#ec4899"; // Tailwind Pink 500 (Vivid Fuchsia Pink)
+    case "jsx":
+      return "#14b8a6"; // Tailwind Teal 500 (Bright React Teal Green)
+
+    // 🔄 Looping Scopes (Tailwind Orange 500)
+    case "looping":
     case "for":
     case "while":
+    case "do":
+      return "#f97316"; // Vivid Sun Orange
+
+    // 🛣️ Conditional Scopes (Tailwind Indigo 500)
+    case "conditional":
     case "if":
-    case "else-if": // 💡 Fix: if-else context ပါ အရောင်တူ သတ်မှတ်ပေးခြင်း
+    case "else-if":
     case "else":
     case "switch":
+      return "#FE9A00"; // Vivid Amber  ( Tailwind Amber 500 )
+
+    // 🛡️ Error Handling Scopes (Tailwind Red 500)
+    case "try-catch-finally":
     case "try":
     case "catch":
     case "finally":
-      return "#f78c6c"; // Soft Coral Orange
-    case "static-block":
-      return "#ff5370"; // Premium Rose Red
-    case "jsx":
-      return "#80deea"; // Bright Sky React Blue
+      return "#ef4444"; // Vivid Safety Red
+
     default:
       return "var(--text-color, var(--primary-text-color, #ffffff))";
   }
 }
 
+/**
+ * Generates an inline vector SVG icon string mapped to specific structural scopes
+ * @param type - The target element configuration type string
+ * @returns Clean, standard-compliant XML/SVG inline asset string
+ */
 export function getIconByType(type: string): string {
   const color = getColorByType(type);
-
-  // Base SVG wrapper styles for modern pixel-perfect alignment
-  const svgStyle = `width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px; display:inline-block;"`;
+  const fillMode = type === "listener" ? color : "none";
+  const svgStyle = `width="12" height="12" viewBox="0 0 16 16" fill="${fillMode}" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px; display:inline-block;"`;
 
   switch (type) {
     case "class":
     case "interface":
-      // OOP / Class Bracket Box Icon
-      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M6 5h1V11H6M10 5h-1V11H10"/></svg>`;
-
-    case "type":
-    case "enum":
-      // Crisp Document / Definition Tag Icon
-      return `<svg ${svgStyle}><path d="M3 1.5h6.5L13 5v9.5c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1v-12c0-.6.4-1 1-1zM9.5 1.5V5H13"/></svg>`;
-
+      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5.5 5.5H4v5h1.5M10.5 5.5H12v5h-1.5"/></svg>`;
     case "method":
-      // Clean VS-Code Style Cube 3D Wireframe Icon
-      return `<svg ${svgStyle}><path d="M8 1.5l5.5 3.2v6.6L8 14.5l-5.5-3.2V4.7L8 1.5zM2.5 4.7L8 8l5.5-3.3M8 8v6.5"/></svg>`;
-
+      return `<svg ${svgStyle}><path d="M8 1.5l5.5 3.2v6.6L8 14.5l-5.5-3.2V4.7z M2.5 4.7L8 8l5.5-3.3 M8 8v6.5"/></svg>`;
     case "function":
-      // Math/Code "f(x)" Pure Math Curvature Function Icon
-      return `<svg ${svgStyle}><path d="M11 2.5c-.8 0-1.5.5-1.8 1.2L7.2 11c-.3.7-1 1.2-1.8 1.2M4 7h6.5"/></svg>`;
-
-    case "arrow":
-    case "callback":
-      // Elegant Code Branch Arrow Loop Icon
-      return `<svg ${svgStyle}><path d="M2 4.5h6.5a2.5 2.5 0 0 1 0 5H2M10.5 2l3 2.5-3 2.5"/></svg>`;
-
-    case "array":
-      // Pure Minimalist Square Bracket Icon
-      return `<svg ${svgStyle}><path d="M5 2H2.5v12H5M11 2h2.5v12H11"/></svg>`;
-
-    case "object":
-    case "objectKey":
-      // Modern Structural Bullet Object Node Icon
-      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg>`;
-
-    case "variable":
-      // 🟢 Minimalist Box-Identity 'V' Shape Variable Token Icon
-      return `<svg ${svgStyle}><circle cx="8" cy="8" r="6.5"/><path d="M5.5 6.5L8 11.5l2.5-5"/></svg>`;
-
+      return `<svg ${svgStyle}><path d="M11 2.5c-.8 0-1.5.7-1.8 1.5L6.8 13.5c-.3.8-1 1.5-1.8 1.5 M3.5 8h7"/></svg>`;
+    case "property":
+      return `<svg ${svgStyle}><circle cx="5" cy="11" r="2.5"/><path d="M7 9l6.5-6.5M10.5 5l1.5 1.5M12 3.5l1.5 1.5"/></svg>`;
     case "method-chain":
-      // 🍇 Modern Pipeline Stream Icon (Transforming / Fluid Chain Data Flow)
-      return `<svg ${svgStyle}><path d="M2 3h5v4H2zm7 6h5v4H9zM4.5 7v4H9M11.5 3v6h-2.5"/></svg>`;
-
-    case "control-flow":
+      return `<svg ${svgStyle}><circle cx="4" cy="4" r="1.5"/><circle cx="12" cy="12" r="1.5"/><path d="M4 5.5v2.5a2 2 0 0 0 2 2h4a2 2 0 0 1 2 2v2.5"/></svg>`;
+    case "looping":
     case "for":
     case "while":
+    case "do":
+      return `<svg ${svgStyle}><path d="M2.5 8a5.5 5.5 0 1 1 1.5 3.5m0 0V9m0 2.5H6"/></svg>`;
+    case "conditional":
     case "if":
-    case "else-if": // 💡 Fix: if-else block အတွက် အိုင်ကွန် ချိန်ညှိခြင်း
+    case "else-if":
     case "else":
     case "switch":
+      return `<svg ${svgStyle}><path d="M4 2v12M4 8a3 3 0 0 0 3 3h5M11.5 8.5L14 11l-2.5 2.5"/></svg>`;
+    case "try-catch-finally":
     case "try":
     case "catch":
     case "finally":
-      // Dynamic Circular Direction/Loop Icon
-      return `<svg ${svgStyle}><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5V8l2 2"/></svg>`;
-
+      return `<svg ${svgStyle}><path d="M2.5 5.5V3.5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v2M2.5 10.5v2a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-2M5.5 8h5"/></svg>`;
+    case "type":
+    case "enum":
+      return `<svg ${svgStyle}><path d="M2.5 4.5h8.5L14.5 8l-3.5 3.5H2.5z M5.5 8h2"/></svg>`;
+    case "variable":
+      return `<svg ${svgStyle}><rect x="2.5" y="4.5" width="11" height="7" rx="1.5"/><path d="M6 6.5l2 3 2-3"/></svg>`;
+    case "arrow":
+    case "callback":
+      return `<svg ${svgStyle}><path d="M2.5 5h6.5a2.5 2.5 0 0 1 0 5H2.5 M10.5 2.5L13.5 5l-3.5 2.5"/></svg>`;
+    case "array":
+      return `<svg ${svgStyle}><path d="M5.5 2.5H3v11h2.5M10.5 2.5H13v11h-2.5"/></svg>`;
+    case "object":
+    case "objectKey":
+      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5.5 5.5h5M5.5 8.5h5M5.5 11.5h3"/></svg>`;
     case "static-block":
-      // Secure / Initializer Safe Lock Icon
       return `<svg ${svgStyle}><rect x="3" y="6.5" width="10" height="7" rx="1"/><path d="M4.5 6.5V4a3.5 3.5 0 0 1 7 0v2.5"/></svg>`;
-
     case "jsx":
-      // Geometric Atomic Orbit React-Helix Icon
       return `<svg ${svgStyle}><ellipse cx="8" cy="8" rx="6.5" ry="2.5" transform="rotate(30 8 8)"/><ellipse cx="8" cy="8" rx="6.5" ry="2.5" transform="rotate(-30 8 8)"/><circle cx="8" cy="8" r="1" fill="${color}"/></svg>`;
-
     case "listener":
-      // ⚡ Sharp Lightning Web Event Hook Icon (Event Pink Filler Included)
-      return `<svg ${svgStyle} fill="${color}"><path d="M9.5 1.5L2.5 9h5v5.5l7-7.5h-5z"/></svg>`;
-
+      return `<svg ${svgStyle}><path d="M9.5 1.5L2.5 9h5v5.5l7-7.5h-5z"/></svg>`;
     default:
-      // Terminal Default Standard Block Icon
       return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 5.5L7.5 8 5 10.5M9 10.5h2.5"/></svg>`;
   }
 }
