@@ -1,13 +1,23 @@
 import { parser as jsParser } from "@lezer/javascript";
 import { SyntaxNode } from "@lezer/common";
 
+// Configure Lezer Parser to support full TypeScript type definitions and React JSX/TSX syntax trees
 const parser = jsParser.configure({ dialect: "ts jsx" });
 
+/**
+ * Interface representing a verified structural scope point in the breadcrumbs hierarchy
+ */
 export interface ScopeBlock {
   name: string;
   type: string;
+  from: number; // Text offset position within the document buffer for interactive code navigation
 }
 
+/**
+ * Maps a raw CodeMirror Lezer AST Node type string into standard plugin layout semantic scopes
+ * @param nodeType - The structural name token from the parser tree
+ * @returns Standardized tracking string or null if the node should be skipped
+ */
 export function getScopeType(nodeType: string): string | null {
   switch (nodeType) {
     case "ClassDeclaration":
@@ -56,17 +66,27 @@ export function getScopeType(nodeType: string): string | null {
   }
 }
 
+/**
+ * Traverses immediate adjacent sibling child elements to safely locate binding identifier literals
+ * @param node - Target structural node to evaluate
+ * @param code - Active raw string text buffer
+ * @returns Extracted string identifier name or null if unmapped
+ */
 function getIdentifierName(
   node: SyntaxNode | null,
   code: string,
 ): string | null {
   if (!node) return null;
+
+  // Explicit override rule: Force target structural methods matching 'constructor' names directly
   if (
     node.name === "MethodDeclaration" &&
     code.slice(node.from, node.to).trim().startsWith("constructor")
   ) {
     return "constructor";
   }
+
+  // Predefined acceptable Lezer syntax tokens representing actual descriptive object labels
   const directNameTokens = [
     "VariableDefinition",
     "TypeDefinition",
@@ -79,6 +99,7 @@ function getIdentifierName(
     "VariableName",
     "Identifier",
   ];
+
   let child = node.firstChild;
   while (child) {
     if (directNameTokens.includes(child.name)) {
@@ -89,6 +110,9 @@ function getIdentifierName(
   return null;
 }
 
+/**
+ * Extracts parameter naming signatures from function parameter definitions
+ */
 function getParamName(node: SyntaxNode, code: string): string | null {
   const paramList = node.getChild("ParamList");
   if (paramList) {
@@ -106,6 +130,10 @@ function getParamName(node: SyntaxNode, code: string): string | null {
   return null;
 }
 
+/**
+ * Recursively resolves complex multi-tier dot notations or execution patterns back into clean definitions
+ * @example turns 'this.database.usersList.filter' into a clear readable string expression
+ */
 function getCleanCallerName(
   node: SyntaxNode | null,
   code: string,
@@ -140,6 +168,9 @@ function getCleanCallerName(
   return null;
 }
 
+/**
+ * Parses JSX opening context fragments and isolates sub-attribute scopes during inline parameter interactions
+ */
 function getJSXTagName(
   node: SyntaxNode,
   code: string,
@@ -166,6 +197,7 @@ function getJSXTagName(
     }
   }
 
+  // Fallback scanner tracing raw boundaries if primary identifier elements return empty mappings
   if (tagName === "JSX") {
     let child = tagNode.firstChild;
     while (child && (child.name === "<" || child.name === "JSXStartTag")) {
@@ -179,6 +211,7 @@ function getJSXTagName(
     }
   }
 
+  // Smart Context Tracking: If cursor is localized within specific attribute tokens, append them (e.g., Component.onClick)
   let attrChild = tagNode.firstChild;
   while (attrChild) {
     if (
@@ -198,6 +231,9 @@ function getJSXTagName(
   return tagName;
 }
 
+/**
+ * Secondary lookback text slicer running regex matches on text preambles for syntax exceptions
+ */
 function getLookbackName(
   nodeFrom: number,
   code: string,
@@ -214,6 +250,12 @@ function getLookbackName(
   return null;
 }
 
+/**
+ * Main parser entry point executing bottom-up AST traversal from active cursor offsets
+ * @param code - Full continuous text context inside working document buffer
+ * @param cursorPos - Target anchor integer tracking current hardware caret focus offset
+ * @returns Array list containing fully mapped out layout tracks
+ */
 export function resolveBreadcrumbs(
   code: string,
   cursorPos: number,
@@ -224,28 +266,44 @@ export function resolveBreadcrumbs(
     let currentNode: SyntaxNode | null = tree.resolveInner(cursorPos, -1);
     let caughtClause = false;
     let hasCapturedMethodChain = false;
-    const processedNodes = new Set<number>();
+    const processedNodes = new Set<number>(); // De-duplication set to protect against infinite tracking recursion loops
 
     while (currentNode) {
       const nodeType = currentNode.name;
       const mappedType = getScopeType(nodeType);
 
+      // Fast-pass loop skipping to parent nodes if current offset coordinates were checked previously
       if (processedNodes.has(currentNode.from)) {
         currentNode = currentNode.parent;
         continue;
       }
 
+      // Block Tier 1: Process and catch explicit Exception Handling blocks
       if (nodeType === "FinallyClause") {
         caughtClause = true;
-        scopes.unshift({ name: "finally", type: "try-catch-finally" });
+        scopes.unshift({
+          name: "finally",
+          type: "try-catch-finally",
+          from: currentNode.from,
+        });
       } else if (nodeType === "CatchClause") {
         caughtClause = true;
-        scopes.unshift({ name: "catch", type: "try-catch-finally" });
+        scopes.unshift({
+          name: "catch",
+          type: "try-catch-finally",
+          from: currentNode.from,
+        });
       } else if (nodeType === "TryStatement") {
         if (!caughtClause)
-          scopes.unshift({ name: "try", type: "try-catch-finally" });
-        caughtClause = false;
-      } else if (nodeType === "CallExpression") {
+          scopes.unshift({
+            name: "try",
+            type: "try-catch-finally",
+            from: currentNode.from,
+          });
+        caughtClause = false; // Reset catch monitoring states
+      }
+      // Block Tier 2: Process Method Pipelines and Function calls (.map, .filter, event listeners)
+      else if (nodeType === "CallExpression") {
         const memberExpr = currentNode.getChild("MemberExpression");
         if (memberExpr) {
           const propNode = memberExpr.getChild("PropertyName");
@@ -261,6 +319,7 @@ export function resolveBreadcrumbs(
                   ? `${callerName}.addEventListener`
                   : "addEventListener",
                 type: "listener",
+                from: currentNode.from,
               });
             } else if (
               [
@@ -275,6 +334,7 @@ export function resolveBreadcrumbs(
                 "join",
               ].includes(methodName)
             ) {
+              // Ensure we isolate only the immediate method operation chain in multi-chain sequences
               if (!hasCapturedMethodChain) {
                 const leftNode = memberExpr.firstChild;
                 const callerName = leftNode
@@ -284,12 +344,17 @@ export function resolveBreadcrumbs(
                   callerName && callerName !== "return"
                     ? `${callerName}.${methodName}`
                     : `.${methodName}`;
-                scopes.unshift({ name: displayName, type: "method-chain" });
+                scopes.unshift({
+                  name: displayName,
+                  type: "method-chain",
+                  from: currentNode.from,
+                });
                 hasCapturedMethodChain = true;
               }
             }
           }
         } else {
+          // Track and represent global class initializers and constructor object setups
           const calleeNode = currentNode.firstChild;
           if (calleeNode) {
             const calleeName = code
@@ -310,11 +375,17 @@ export function resolveBreadcrumbs(
               calleeNode.name === "VariableName" ||
               calleeNode.name === "Identifier"
             ) {
-              scopes.unshift({ name: `${calleeName}()`, type: "function" });
+              scopes.unshift({
+                name: `${calleeName}()`,
+                type: "function",
+                from: currentNode.from,
+              });
             }
           }
         }
-      } else if (
+      }
+      // Block Tier 3: Process Structural Anonymous Data Sets (Callbacks, Arrays, Literals)
+      else if (
         [
           "ObjectExpression",
           "ArrayExpression",
@@ -333,6 +404,7 @@ export function resolveBreadcrumbs(
         if (parent && parent.name === "VariableDeclaration")
           parent = parent.getChild("VariableDeclarator") || parent;
 
+        // Resolve named structural bindings (e.g., 'const user = () => {}')
         if (
           parent &&
           (parent.name === "VariableDeclarator" ||
@@ -354,7 +426,11 @@ export function resolveBreadcrumbs(
             ) {
               typeOverride = "method";
             }
-            scopes.unshift({ name: nodeName, type: typeOverride });
+            scopes.unshift({
+              name: nodeName,
+              type: typeOverride,
+              from: currentNode.from,
+            });
             processedNodes.add(parent.from);
             processedNodes.add(
               currentNode.parent ? currentNode.parent.from : 0,
@@ -364,13 +440,23 @@ export function resolveBreadcrumbs(
 
         if (!nodeName && nodeType === "FunctionExpression") {
           nodeName = getIdentifierName(currentNode, code);
-          if (nodeName) scopes.unshift({ name: nodeName, type: typeOverride });
+          if (nodeName)
+            scopes.unshift({
+              name: nodeName,
+              type: typeOverride,
+              from: currentNode.from,
+            });
         }
 
+        // Apply fallback handlers if structural properties are wrapped without formal assignments
         if (!nodeName) {
           const fallback = getLookbackName(currentNode.from, code);
           if (fallback) {
-            scopes.unshift({ name: fallback.name, type: typeOverride });
+            scopes.unshift({
+              name: fallback.name,
+              type: typeOverride,
+              from: currentNode.from,
+            });
           } else if (
             nodeType === "ArrowFunction" ||
             nodeType === "FunctionExpression"
@@ -378,6 +464,7 @@ export function resolveBreadcrumbs(
             let isStandardCallback = false;
             let parentNode = currentNode.parent;
 
+            // Smart event filter logic: Prevent rendering inline arrow parameters inside JSX or core method pipelines
             if (parentNode && parentNode.name === "ArgList") {
               let grandparent = parentNode.parent;
               if (grandparent && grandparent.name === "CallExpression") {
@@ -418,15 +505,21 @@ export function resolveBreadcrumbs(
               }
             }
 
+            // Fallback to parameter name or use clean "anonymous" token identifier string
             if (!isStandardCallback) {
               const paramName = getParamName(currentNode, code);
-              // ✨ ပြင်ဆင်လိုက်သည့်အပိုင်း: နာမည်မရှိသော Arrow Function များကို "anonymous" ဟု ပြောင်းလဲသတ်မှတ်ခြင်း
               const defaultName = paramName ? paramName : "anonymous";
-              scopes.unshift({ name: defaultName, type: typeOverride });
+              scopes.unshift({
+                name: defaultName,
+                type: typeOverride,
+                from: currentNode.from,
+              });
             }
           }
         }
-      } else if (mappedType) {
+      }
+      // Block Tier 4: Process Standard Mapped Control Flow, Declarations, and Declarators
+      else if (mappedType) {
         let nodeName: string | null = null;
         if (
           ["class", "interface", "type", "enum", "function", "method"].includes(
@@ -444,9 +537,13 @@ export function resolveBreadcrumbs(
               currentNode.getChild("ArrayExpression");
             if (childExpr) {
               currentNode = currentNode.parent;
-              continue;
+              continue; // Delegate tracking loop back to expressions handling blocks directly
             }
-            scopes.unshift({ name: nodeName, type: "variable" });
+            scopes.unshift({
+              name: nodeName,
+              type: "variable",
+              from: currentNode.from,
+            });
           }
         } else if (
           nodeType === "Property" ||
@@ -456,7 +553,11 @@ export function resolveBreadcrumbs(
           if (nodeName) {
             let finalType = "property";
             if (currentNode.getChild("Block")) finalType = "method";
-            scopes.unshift({ name: nodeName, type: finalType });
+            scopes.unshift({
+              name: nodeName,
+              type: finalType,
+              from: currentNode.from,
+            });
           }
         } else if (mappedType === "static-block") {
           nodeName = "static {}";
@@ -468,6 +569,7 @@ export function resolveBreadcrumbs(
           ) &&
           nodeType !== "TryStatement"
         ) {
+          // Safe evaluation logic to process alternative continuous 'else-if' structural combinations
           if (nodeType === "IfStatement") {
             const parentElse = currentNode.getChild("else");
             const childIf = currentNode.getChild("IfStatement");
@@ -507,10 +609,14 @@ export function resolveBreadcrumbs(
             nodeType,
           )
         ) {
-          scopes.unshift({ name: nodeName, type: mappedType });
+          scopes.unshift({
+            name: nodeName,
+            type: mappedType,
+            from: currentNode.from,
+          });
         }
       }
-      currentNode = currentNode.parent;
+      currentNode = currentNode.parent; // Traverse upward to outer structural tracking scope blocks
     }
   } catch (err) {
     console.error("Breadcrumbs Error:", err);

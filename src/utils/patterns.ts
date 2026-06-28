@@ -1,71 +1,72 @@
 /**
- * Resolves a hexadecimal color token from Tailwind 500 Palette depending on the node type
+ * Resolves a hexadecimal color token optimized for dark/AMOLED themes with high contrast,
+ * visual balance, eye care, and distinct mapping for each scope block.
  * @param type - The registered layout scope type string
  * @returns HEX color string or functional CSS variable fallback
  */
 export function getColorByType(type: string): string {
   switch (type) {
-    // 🧱 OOP Structures (Tailwind Amber & Violet)
+    // 🧱 OOP Structures (Warm Amber, Soft Lavender, & Neon Blue)
     case "class":
     case "interface":
-      return "#f59e0b"; // Tailwind Amber 500 (Warm Vivid Gold)
+      return "#FFCB6B"; // Warm Amber Gold (High Visibility structural boundaries)
     case "method":
-      return "#8b5cf6"; // Tailwind Violet 500 (Vivid Royal Purple)
+      return "#C792EA"; // Soft Lavender Purple (Distinct from method chains)
     case "function":
-      return "#3b82f6"; // Tailwind Blue 500 (Vivid Core Blue)
+      return "#82B1FF"; // Neon Soft Blue (Global execution frames)
 
-    // 🔗 Fluid Method Chains (Tailwind Purple) - Explicitly Added!
+    // 🔗 Fluid Method Chains (Elegant Deep Violet - clearly distinct from Method Purple)
     case "method-chain":
-      return "#a855f7"; // Tailwind Purple 500 (Bright Neon Purple)
+      return "#A371F7"; // Elegant Deep Violet
 
-    // 🏷️ Types & Properties (Tailwind Cyan & Sky)
+    // 🏷️ Types & Properties (Electric Cyan & Pastel Emerald Keyframes)
     case "type":
     case "enum":
-      return "#06b6d4"; // Tailwind Cyan 500 (Electric Cyan)
+      return "#00E5FF"; // Electric Cyan (TS explicit type safety indicators)
     case "property":
-      return "#0ea5e9"; // Tailwind Sky 500 (Vivid Sky Blue)
-
-    // 📦 Data Structures (Tailwind Lime & Yellow)
-    case "object":
     case "objectKey":
-      return "#84cc16"; // Tailwind Lime 500 (Vivid Fresh Lime)
-    case "array":
-      return "#eab308"; // Tailwind Yellow 500 (Vivid Canary Yellow)
-    case "variable":
-      return "#22c55e"; // Tailwind Green 500 (Standard Ecosystem Green)
+      return "#C3E88D"; // Pastel Emerald (Structural Object properties & Map keys)
 
-    // 🚀 Execution Blocks & Events (Tailwind Emerald, Rose & Pink)
+    // 📦 Data Structures (Warm Yellow, Leaf Green, & Soft Mint)
+    case "object":
+      return "#A9FFB2"; // Pale Sage Green (Differentiates Object literals from Properties)
+    case "array":
+      return "#FFD54F"; // Soft Canary Yellow (Tuples, matrices, and collection structures)
+    case "variable":
+      return "#7EE787"; // Fresh Leaf Green (Standard localized block-scoped assignments)
+
+    // 🚀 Execution Blocks & Events (Mint, Crimson, Coral, & Sky Teal)
     case "arrow":
     case "callback":
-      return "#10b981"; // Tailwind Emerald 500 (Mint Green)
+      return "#4ECC97"; // Mint Fresh Green (Lambda expressions & anonymous scopes)
     case "listener":
-      return "#f43f5e"; // Tailwind Rose 500 (Vivid Event Rose)
+      return "#FB7185"; // Soft Crimson Salmon (Interactive hardware & browser event hooks)
     case "static-block":
-      return "#ec4899"; // Tailwind Pink 500 (Vivid Fuchsia Pink)
+      return "#FF5370"; // Premium Rose Red (Class initialization runtime components)
     case "jsx":
-      return "#14b8a6"; // Tailwind Teal 500 (Bright React Teal Green)
+      return "#80DEEA"; // Bright Sky React Blue (Virtual DOM components & JSX/TSX tags)
 
-    // 🔄 Looping Scopes (Tailwind Orange 500)
+    // 🔄 Looping Scopes (Vivid Energetic Tangerine)
     case "looping":
     case "for":
     case "while":
     case "do":
-      return "#f97316"; // Vivid Sun Orange
+      return "#FB923C"; // Energetic Tangerine Orange
 
-    // 🛣️ Conditional Scopes (Tailwind Indigo 500)
+    // 🛣️ Conditional Scopes (Soft Coral Orange - completely distinct from Loop Tangerine)
     case "conditional":
     case "if":
     case "else-if":
     case "else":
     case "switch":
-      return "#FE9A00"; // Vivid Amber  ( Tailwind Amber 500 )
+      return "#F78C6C"; // Soft Coral Orange
 
-    // 🛡️ Error Handling Scopes (Tailwind Red 500)
+    // 🛡️ Error Handling Scopes (Vivid Safety Red)
     case "try-catch-finally":
     case "try":
     case "catch":
     case "finally":
-      return "#ef4444"; // Vivid Safety Red
+      return "#EF4444"; // Balanced Safety Red (High-alert diagnostics capture)
 
     default:
       return "var(--text-color, var(--primary-text-color, #ffffff))";
@@ -94,11 +95,13 @@ export function getIconByType(type: string): string {
       return `<svg ${svgStyle}><circle cx="5" cy="11" r="2.5"/><path d="M7 9l6.5-6.5M10.5 5l1.5 1.5M12 3.5l1.5 1.5"/></svg>`;
     case "method-chain":
       return `<svg ${svgStyle}><circle cx="4" cy="4" r="1.5"/><circle cx="12" cy="12" r="1.5"/><path d="M4 5.5v2.5a2 2 0 0 0 2 2h4a2 2 0 0 1 2 2v2.5"/></svg>`;
+
     case "looping":
     case "for":
     case "while":
     case "do":
       return `<svg ${svgStyle}><path d="M2.5 8a5.5 5.5 0 1 1 1.5 3.5m0 0V9m0 2.5H6"/></svg>`;
+
     case "conditional":
     case "if":
     case "else-if":
@@ -115,9 +118,11 @@ export function getIconByType(type: string): string {
       return `<svg ${svgStyle}><path d="M2.5 4.5h8.5L14.5 8l-3.5 3.5H2.5z M5.5 8h2"/></svg>`;
     case "variable":
       return `<svg ${svgStyle}><rect x="2.5" y="4.5" width="11" height="7" rx="1.5"/><path d="M6 6.5l2 3 2-3"/></svg>`;
+
     case "arrow":
     case "callback":
       return `<svg ${svgStyle}><path d="M2.5 5h6.5a2.5 2.5 0 0 1 0 5H2.5 M10.5 2.5L13.5 5l-3.5 2.5"/></svg>`;
+
     case "array":
       return `<svg ${svgStyle}><path d="M5.5 2.5H3v11h2.5M10.5 2.5H13v11h-2.5"/></svg>`;
     case "object":

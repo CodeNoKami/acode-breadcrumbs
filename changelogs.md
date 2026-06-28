@@ -1,1 +1,36 @@
-# Changelogs
+# Changelog
+
+All notable changes to this project will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/).
+
+---
+
+## [2.2.1] - 2026-06-28
+
+### 🎨 UI & Icon Design Corrections
+
+- **Fixed While Loop Icon Alignment:** Resolved an issue where the `while`, `for`, and `do` control flow structures rendered an unaligned refresh/undo symbol. Replaced it with a centered, clockwise thin-line infinite loop vector.
+- **Fixed Arrow Function Icon Orientation:** Corrected the orientation of the lambda expression arrow (`=>`). It now cleanly points to the right rather than rendering as an inverted bottom-left return hook.
+- **Unified Sub-Scope Mappings:** Ensured child-scoped tokens like `for`, `do`, `while` and arrow `callback` scopes automatically adapt the corrected parent vector tracks.
+
+### 👁️ Palette Calibration & Eye Care Optimization
+
+- **High-Contrast Separation:** Redesigned the color scheme based on desktop IDE standards to eradicate overlapping tones and maximize accessibility in dark/AMOLED runtime environments.
+- **Distinct Control Flows:** Separated Looping structures (**Vivid Tangerine Orange** - `#FB923C`) from Conditional blocks (**Soft Coral Orange** - `#F78C6C`).
+- **Enhanced Functional Clarity:** Differentiated standard class Methods (**Soft Lavender Purple** - `#C792EA`) from pipeline `Method Chains` (**Deep Violet** - `#A371F7`).
+- **Refined Data Structure Indicators:** Isolated structural `Object` scopes (**Pale Sage Green** - `#A9FFB2`) from individual `Property` tokens (**Pastel Emerald** - `#C3E88D`).
+
+### 🛠️ Code Quality & Architecture Documentation
+
+- **Comprehensive JSDoc Integration:** Added formal standard documentation headers to core utilities (`lezerParser.ts`, `patterns.ts`) and the orchestration file (`main.ts`).
+- **Contributor-Friendly Codebase:** Injected descriptive English technical logic commentary alongside abstract AST traversal conditions, simplifying community extension and open-source contribution workflows without impacting performance.
+- **AST Scaffolding Resilience:** Hardened internal node lookup edge-cases, ensuring safe state evaluation during heavy document repaints or horizontal text selection transitions.
+
+---
+
+## [2.2.0]
+
+### Added
+
+- Initial experimental integration of the Lezer-based Abstract Syntax Tree (AST) parser engine.
+- Added real-time tracking bar wrapper above active CodeMirror viewport containers.
+- Support for basic token layout isolation (`class`, `function`, `variable`).
