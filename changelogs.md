@@ -1,6 +1,19 @@
-# Changelog
+## [2.3.3] - 2026-06-28
 
-All notable changes to this project will be documented in this file. This project adheres to Semantic Versioning.
+### Added
+
+- **Native Mobile Touch Resizing:** Engineered a specialized touch gesture drag-to-resize corner handle, ensuring fluid window layout customization on mobile touchscreens where native desktop CSS resize properties are unsupported.
+
+### Fixed
+
+- **Nested Scope Bypass:** Replaced the brittle leaf-node range validation with a robust **Structural Scope Fingerprint Engine** (`type-from-to` string aggregation). This eliminates the false-positive caching bug where the breadcrumbs bar failed to refresh when crossing boundaries between parent modules and deeply nested anonymous scopes.
+- **Ghost Event Listener Memory Leak:** Implemented a definitive `activePopupCleanup` closure layer to systematically unbind global document touch and mouse event listeners upon preview dismissal, preventing compound memory overhead.
+- **Long-Press Event Collision:** Integrated a `blockClickBypass` safety flag to neutralize accidental cursor jumping or document selection triggers immediately following the release of long-press preview interactions.
+
+### Performance
+
+- **Optimized Fingerprint Caching Guard:** Leveraged the structural fingerprint mechanism to safely short-circuit and bypass the entire DOM reconstruction pipeline _only_ when both the raw document content and the active scope hierarchy remain entirely identical.
+- **CPU-Friendly Debounce Throttle:** Scaled the internal event polling debounce timeout from 45ms to a balanced 150ms window, significantly eliminating background typing stutters and reducing mobile CPU thermal throttling under heavy document repaints.
 
 ## [2.2.3] - 2026-06-28
 

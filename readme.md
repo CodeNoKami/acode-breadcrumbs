@@ -6,11 +6,12 @@ A smart, high-performance, and **theme-adaptive VS Code-style Breadcrumbs naviga
 
 ### Flawless Nested Scope Tracking & Dynamic Methods
 
-Active scope representation mapping smoothly from Classes to Methods, Array Operations, and Literals directly:
+Active scope representation mapping smoothly from Classes to Methods, Array Operations, and deeply nested blocks or IIFEs:
 
 ```
 Symbols › 📦 DatabaseService › 📦 constructor
 Symbols › 🍇 usersList.filter › 🔄 anonymous
+Symbols › 🔄 iifeModule › 🔄 anonymous
 
 ```
 
@@ -25,15 +26,15 @@ Symbols › 📄 UserRole › 🟢 config_list › 🗂️ properties
 
 ## ✨ Features
 
-- **🎯 Interactive Code Navigation [v2.2.0+]:** Every scope element rendered on the bar is now **fully clickable**. Clicking a scope path item will instantly jump your editor cursor directly to the corresponding block's start position (from offset) and immediately refocus the editor so you can continue typing without friction.
-- **🔍 Long-Press Code Preview & Theme-Adaptive Highlights [v2.2.2]:** Long-pressing any breadcrumb item triggers a high-definition code snippet preview popup strictly anchored beneath the navigation bar. It is powered by a robust luminance-aware engine that automatically toggles between a premium Matte Dark Palette (One-Dark/Dracula hybrid) and a clean Light Palette (GitHub-Light) depending on your active editor theme to prevent raw, unreadable token colors.
-- **✨ Dynamic Contextual Visual Feedback [v2.2.2]:** When a long-press is confirmed, the targeted scope item instantly draws a dynamic text underline matching that specific block type's identity color (getColorByType). The underline is automatically cleared once the popup is dismissed, delivering a flawless, high-tier native application feel.
-- **🚀 Hybrid Parsing Engine (AST + Lookback):** Combines the mechanical accuracy of CodeMirror's Lezer AST parser with an intelligent lookback text-slicing engine, making scope detection bulletproof against syntax variations.
-- **⚡ Pure Method Chaining Awareness:** No generic or messy code blocks in your bar. It safely isolates precise method names inside chains (e.g., extracts just filter, map, or reduce instead of the whole functional block) and intelligently tracks down the original caller identifier (e.g., usersList.filter).
+- **🎯 Interactive Code Navigation [v2.2.0+]:** Every scope element rendered on the bar is **fully clickable**. Clicking a scope path item instantly jumps your editor cursor directly to the corresponding block's start position (from offset) and immediately refocuses the editor so you can continue typing without friction.
+- **🔄 Structural Scope Fingerprint Engine [v2.3.3]:** Features a unique structural fingerprinting mechanism (type-from-to string aggregation) that completely eliminates stale display data. Moving your cursor between complex parent blocks and deeply nested child functions (like an IIFE structure) triggers an instantaneous path update.
+- **🔍 Long-Press Code Preview & Theme-Adaptive Highlights [v2.2.2+]:** Long-pressing any breadcrumb item triggers a high-definition code snippet preview popup strictly anchored beneath the navigation bar. It is powered by a robust luminance-aware engine that automatically matches your active editor theme (Dark/Light) to prevent unreadable token colors.
+- **📐 Native Mobile Touch Resizing [v2.3.3]:** Engineered with a native touchscreen drag gesture handle at the bottom corner of the preview popup. Users can dynamically scale the preview window height and width smoothly, bypassing mobile layout limitations.
+- **⚡ Pure Method Chaining Awareness:** Isolates precise method names inside chains (e.g., extracts just filter, map, or reduce instead of the whole functional block) and tracks down the original caller identifier (e.g., usersList.filter).
+- **🛡️ Smart JSX Event Handler Filtering:** Intelligently detects and filters out inline arrow function parameters inside JSX attributes (e.g., avoids rendering trailing event arguments like > e from onClick={(e) => {}}), keeping component paths completely clean.
 - **🟢 Granular Variable Tracking:** Full tracking awareness for standard localized variable definitions (const, let, var), mapping them down carefully within nested blocks.
-- **🛡️ Smart JSX Event Handler Filtering:** Intelligently detects and filters out inline arrow function parameters inside JSX attributes (e.g., avoids rendering trailing event arguments like > e from onClick={(e) => {}}), keeping deep JSX element component paths perfectly clean.
-- **🔒 Smart Environment Filter:** Automatically wakes up within JavaScript, JSX, TypeScript, and TSX configurations, while keeping itself cleanly hidden inside plain text, HTML, CSS, or Markdown files.
-- **🎨 Premium Thin-Line Icons & Matte Themes [v2.2.1+]:** Packed with modern, lightweight geometric SVG icons (stroke-width="1.3") calibrated for high-resolution mobile AMOLED screens. Built using a premium matte-pastel palette that balances high-contrast accessibility and eye care.
+- **🔒 Smart Environment Filter:** Automatically activates within JavaScript, JSX, TypeScript, and TSX configurations, while keeping itself cleanly hidden inside plain text, HTML, CSS, or Markdown files.
+- **🎨 Premium Thin-Line Icons & Matte Themes [v2.2.1+]:** Packed with lightweight geometric SVG icons (stroke-width="1.3") calibrated for high-resolution mobile AMOLED screens. Built using a premium matte-pastel palette that balances high-contrast accessibility and eye care.
 
 ## 🖼️ Preview Image
 
@@ -47,31 +48,18 @@ Symbols › 📄 UserRole › 🟢 config_list › 🗂️ properties
 
 ## 🎨 Icon & Theme Standards Map
 
-| Symbol Type             | UI Icon | Color Palette | Description / Node Type Match                                           |
-| ----------------------- | ------- | ------------- | ----------------------------------------------------------------------- |
-| **Class / Interface**   | 🔲      | #FFCB6B       | Warm Amber Gold / OOP Bracket Frame Boundary                            |
-| **Type Alias / Enum**   | 📄      | #00E5FF       | Electric Cyan / TS Explicit Types & Definition Specs                    |
-| **Method**              | 📦      | #C792EA       | Soft Lavender Purple / VS-Code Style 3D Method Wireframe & Constructors |
-| **Function**            | 𝑓       | #82B1FF       | Neon Soft Blue / Math Curvature f(x) Global Functions                   |
-| **Arrow / Callback**    | 🔄      | #4ECC97       | Mint Fresh Green / Lambda Expressions & "anonymous" Callback Fallbacks  |
-| **Variable**            | 🟢      | #7EE787       | Fresh Leaf Green / Block-Scoped Local Variables                         |
-| **Method Chain**        | 🍇      | #A371F7       | Elegant Deep Violet / Fluid Pipeline Operators (.map, .filter, .reduce) |
-| **Array Expression**    | 🄶       | #FFD54F       | Soft Canary Yellow / Arrays, Seed Data & Tuple Lists                    |
-| **Object / Property**   | 🗂️      | #C3E88D       | Pastel Emerald / Structural Object Keys & Property Definitions          |
-| **Object Literal**      | 📦      | #A9FFB2       | Pale Sage Green / Root Object Expression Initializations                |
-| **Looping (for/while)** | 🔄      | #FB923C       | Energetic Tangerine / For, While, and Do-While Loop Constructs          |
-| **Conditional**         | 🕒      | #F78C6C       | Soft Coral Orange / If, Else-If, Else, and Switch Statements            |
-| **Static Block**        | 🔒      | #FF5370       | Premium Rose Red / Class Initializer Blocks                             |
-| **JSX Element**         | ⚛️      | #80DEEA       | Bright Sky React Blue / UI Components & Helix Fragments                 |
-| **Error Handling**      | 🛡️      | #EF4444       | Balanced Safety Red / Try, Catch, and Finally Diagnostics               |
-
-## ⚠️ Caution & Continuous Tuning
-
-> [!NOTE]
-> Since this plugin relies closely on **CodeMirror's Lezer AST Node Traversal**, complex code syntax combinations can sometimes result in minor path variations:
->
-> - **Multi-level else-if chains:** Deep nesting layouts can occasionally display parent scopes differently depending on code indentation and formatting.
-> - **Deeply Nested Inline Arguments:** Intermittent stripping of parent identifiers may occur within heavily nested arrays if mixed with immediate inline callbacks without structural assignment.
+| Symbol Type             | UI Icon | Color Palette     | Description / Node Type Match                                           |
+| ----------------------- | ------- | ----------------- | ----------------------------------------------------------------------- |
+| **Class / Interface**   | 🔲      | #61AFEF / #4EC9B0 | OOP Bracket Frame Boundary & TypeScript Contracts                       |
+| **Type Alias / Enum**   | 📄      | #56B6C2 / #98C379 | TS Explicit Types, Enums & Definition Specs                             |
+| **Method**              | 📦      | #C792EA           | Soft Lavender Purple / VS-Code Style 3D Method Wireframe & Constructors |
+| **Function / Arrow**    | 𝑓 / 🔄  | #61AFEF / #D19A66 | Neon Blue global scopes & Lambda Callbacks / IIFEs                      |
+| **Variable / Property** | 🟢 / 🗂️ | #E06C75 / #C3E88D | Local Block-Scoped variables & Object Property keys                     |
+| **Method Chain**        | 🍇      | #A371F7           | Deep Violet / Fluid Pipeline Operators (.map, .filter)                  |
+| **Looping (for/while)** | 🔄      | #FB923C           | Energetic Tangerine / Loop Control Constructs                           |
+| **Conditional**         | 🕒      | #F78C6C           | Soft Coral Orange / Branching Statements (if, switch)                   |
+| **Error Handling**      | 🛡️      | #C5A5C5           | Try, Catch, and Finally Diagnostics                                     |
+| **JSX Element**         | ⚛️      | #4fc1ff           | Bright Sky React Blue / UI Components & Helix Fragments                 |
 
 ## 📦 Installation & Build
 
@@ -99,11 +87,11 @@ npm run build
 
 ```
 
-4.  **Output:** The compiled production-grade ZIP bundle will be generated inside your root project directory, fully compressed and optimized, ready to be imported straight into Acode.
+4.  **Output:** The compiled production ZIP bundle will be generated inside your root project directory, fully compressed and optimized, ready to be imported straight into Acode.
 
 ## 🛠️ Tech Stack & Configuration
 
-- **Version:** v2.2.2 (Theme Adaptivity & Long-Press Preview Release)
+- **Version:** v2.3.3 (Structural Fingerprinting & Mobile Resizing Release)
 - **Language:** TypeScript 5+ (Strict Type Checking)
 - **Parser Core:** CodeMirror 6 Lezer JavaScript/TypeScript Dialect Tree
 - **Framework Integration:** Acode Extension Lifecycle API
