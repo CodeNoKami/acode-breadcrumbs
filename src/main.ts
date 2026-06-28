@@ -1,7 +1,7 @@
 import { PLUGIN_ID } from "./configs/constant";
 import { EditorView } from "@codemirror/view";
 import { parser as jsParser } from "@lezer/javascript";
-import { highlightTree, classHighlighter } from "@lezer/highlight"; // Official CodeMirror Highlighting Engine
+import { highlightCode, classHighlighter } from "@lezer/highlight"; // Official Highlighting Engine API
 import { resolveBreadcrumbs, ScopeBlock } from "./utils/lezerParser";
 import { getIconByType, getColorByType } from "./utils/patterns";
 
@@ -15,10 +15,10 @@ declare var acode: any;
  */
 class BreadcrumbsPlugin {
   private container: HTMLDivElement | null = null;
-  private pathContainer: HTMLSpanElement | null = null; // High-performance dynamic rendering sub-target
+  private pathContainer: HTMLSpanElement | null = null;
   private intervalId: any = null;
   private debounceTimeout: any = null;
-  private pressTimer: any = null; // Direct tracking reference for long-press calculations
+  private pressTimer: any = null;
   private onFontChangeHandler: ((newAppFont: string) => void) | null = null;
   private currentEditor: EditorView | null = null;
 
@@ -64,7 +64,7 @@ class BreadcrumbsPlugin {
       z-index: 10; height: 28px;
     `;
 
-    // 1. STATIC HEADER OPTIMIZATION: Build fixed layout structures once to avoid main-thread thrashing
+    // Static Header Optimization: Build fixed layout structures once to avoid main-thread thrashing
     const prefix = document.createElement("span");
     prefix.style.cssText =
       "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff)); flex-shrink: 0;";
@@ -96,7 +96,7 @@ class BreadcrumbsPlugin {
 
     // Listen to changes when user targets alternative working document tab active context
     if (editorManager && editorManager.on) {
-      editorManager.off("switch-file", this.onFileSwitched); // Clean up stale bounds
+      editorManager.off("switch-file", this.onFileSwitched);
       editorManager.on("switch-file", this.onFileSwitched);
     }
 
@@ -158,25 +158,15 @@ class BreadcrumbsPlugin {
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
     this.debounceTimeout = setTimeout(() => {
       this.updateBreadcrumbs(editor);
-    }, 45); // Balanced 45ms update window coalesces typing bursts safely
+    }, 45);
   }
 
-  /**
-   * Triggers background scope refresh updates when global text selection states change.
-   */
   private onGlobalSelectionChange = () => {
-    if (this.currentEditor) {
-      this.queueUpdate(this.currentEditor);
-    }
+    if (this.currentEditor) this.queueUpdate(this.currentEditor);
   };
 
-  /**
-   * Refreshes target active tracking coordinates on immediate cursor interaction events.
-   */
   private onEditorUpdate = () => {
-    if (this.currentEditor) {
-      this.queueUpdate(this.currentEditor);
-    }
+    if (this.currentEditor) this.queueUpdate(this.currentEditor);
   };
 
   /**
@@ -190,30 +180,88 @@ class BreadcrumbsPlugin {
   }
 
   /**
-   * High-performance token highlighter utilizing the official @lezer/highlight package.
-   * Generates token classes dynamically matched to specialized theme styles.
+   * Re-engineered highlighting engine with dynamic Lezer dialect configuration
+   * and class wrapper injections to accurately parse standalone methods without syntax errors.
    */
-  private highlightCode(code: string): string {
+  private highlightCodeSnippet(
+    code: string,
+    filename: string,
+    block?: ScopeBlock,
+  ): string {
     try {
-      const tree = jsParser.parse(code);
-      let html = "";
-      let lastPos = 0;
+      let dialect = "";
+      const lowerName = filename.toLowerCase();
 
-      // Leverage official classHighlighter to emit structured CodeMirror-compatible syntax tokens
-      highlightTree(tree, classHighlighter, (from, to, classes) => {
-        // Append raw unstyled segments (whitespaces, brackets, newlines)
-        if (from > lastPos) {
-          html += this.escapeHtml(code.slice(lastPos, from));
-        }
-        // Wrap token segments with Lezer system CSS classes
-        html += `<span class="${classes}">${this.escapeHtml(code.slice(from, to))}</span>`;
-        lastPos = to;
-      });
-
-      if (lastPos < code.length) {
-        html += this.escapeHtml(code.slice(lastPos));
+      // Configure Lezer dialects dynamically based on active language extensions
+      if (lowerName.endsWith(".tsx")) {
+        dialect = "ts jsx";
+      } else if (lowerName.endsWith(".ts")) {
+        dialect = "ts";
+      } else if (lowerName.endsWith(".jsx")) {
+        dialect = "jsx";
       }
-      return html;
+
+      const configuredParser = jsParser.configure({ dialect });
+      const trimmed = code.trim();
+
+      // Smart Scope Analysis: Detect if the code block represents a class member method/property
+      const hasModifier =
+        /^(private|public|protected|static|async\s+private|async\s+public|async\s+protected)\s/.test(
+          trimmed,
+        );
+      const isMethodShorthand = /^[a-zA-Z_][a-zA-Z0-9_]*\s*\([^]*?\)\s*\{/.test(
+        trimmed,
+      );
+      const isClassContext =
+        block &&
+        block.type &&
+        (block.type.includes("Method") ||
+          block.type.includes("Property") ||
+          block.type === "constructor");
+
+      const wrapInClass = hasModifier || isMethodShorthand || isClassContext;
+
+      // Inject dummy class context to bypass top-level parsing constraints and prevent Error nodes
+      let targetCode = code;
+      if (wrapInClass) {
+        targetCode = `class _FallbackClassWrapper_ {\n${code}\n}`;
+      }
+
+      const tree = configuredParser.parse(targetCode);
+      let lines: string[] = [""];
+      let currentLine = 0;
+
+      // Callback invoked for every styled token block to wrap it in a custom class span
+      const emitToken = (text: string, classes: string) => {
+        const escaped = this.escapeHtml(text);
+        if (classes) {
+          lines[currentLine] += `<span class="${classes}">${escaped}</span>`;
+        } else {
+          lines[currentLine] += escaped;
+        }
+      };
+
+      // Callback invoked whenever a newline character sequence is encountered
+      const emitLineBreak = () => {
+        lines.push("");
+        currentLine++;
+      };
+
+      // Execute official Lezer tree traversal token mapping pipeline
+      highlightCode(
+        targetCode,
+        tree,
+        classHighlighter,
+        emitToken,
+        emitLineBreak,
+      );
+
+      // Cleanly slice out the inserted dummy wrapper boundaries if wrapped
+      if (wrapInClass && lines.length > 2) {
+        lines = lines.slice(1, -1);
+      }
+
+      return lines.join("\n");
     } catch (e) {
       return this.escapeHtml(code); // Resilient fallback to raw presentation upon parsing anomalies
     }
@@ -221,12 +269,13 @@ class BreadcrumbsPlugin {
 
   /**
    * Spawns an overlay layout panel containing a high-definition highlighted code preview
-   * slice directly beneath the active breadcrumbs workspace tracking bar.
+   * slice featuring an elegant Acrylic frosted glass style backdrop filter.
    */
   private showCodePreviewPopup(
     block: ScopeBlock,
     fullCode: string,
     scopeSpan: HTMLSpanElement,
+    filename: string,
   ) {
     const editor = this.currentEditor;
     if (!editor || !editor.dom) return;
@@ -237,14 +286,12 @@ class BreadcrumbsPlugin {
 
     let codeSnippet = fullCode.slice(block.from, block.to).trim();
 
-    // Safety check: Prevent excessive UI paint thrashing on extraordinarily massive objects
     if (codeSnippet.length > 1200) {
       codeSnippet =
         codeSnippet.slice(0, 1200) +
         "\n\n/* ... (Truncated for layout performance) ... */";
     }
 
-    // Dynamic Geometry Calculation: Position overlay layout 4px strictly under the Breadcrumbs boundary
     let popupTop = 32;
     if (this.container) {
       const rect = this.container.getBoundingClientRect();
@@ -270,48 +317,64 @@ class BreadcrumbsPlugin {
       }
     }
 
-    // --- High-Performance Dark/Light Adaptive Engine ---
-    // Parse RGB to calculate precise luminance factor
+    // Parse Theme RGB values to calculate luminance and convert to a semi-transparent Acrylic base
     let isDark = true;
+    let acrylicBg = "rgba(30, 30, 30, 0.75)"; // Dark theme default fallback
     const rgbValues = editorBg.match(/\d+/g);
+
     if (rgbValues && rgbValues.length >= 3) {
       const r = parseInt(rgbValues[0]),
         g = parseInt(rgbValues[1]),
         b = parseInt(rgbValues[2]);
       const luminance = (r * 299 + g * 587 + b * 114) / 1000;
-      isDark = luminance < 135; // True if background matches dark constraints
+      isDark = luminance < 135;
+      // Convert solid color to 75% opacity to let backdrop-filter shine through
+      acrylicBg = `rgba(${r}, ${g}, ${b}, 0.75)`;
+    } else {
+      acrylicBg = isDark
+        ? "rgba(30, 30, 30, 0.75)"
+        : "rgba(245, 245, 245, 0.75)";
     }
+
+    // Premium fine border lines accentuating the glassomorphism container layer
+    const glassBorder = isDark
+      ? "1px solid rgba(255, 255, 255, 0.12)"
+      : "1px solid rgba(0, 0, 0, 0.08)";
 
     const popup = document.createElement("div");
     popup.id = "breadcrumbs-preview-popup";
 
+    // Injected with highly-optimized hardware-accelerated Acrylic blur matrices
     popup.style.cssText = `
       position: fixed; top: ${popupTop}px; left: 5%; width: 90%; max-height: 220px;
-      background-color: ${editorBg}; color: ${editorFg};
-      border: 1px solid rgba(128, 128, 128, 0.25); border-radius: 8px;
-      box-shadow: 0px 14px 35px rgba(0,0,0,0.4); padding: 12px; overflow: auto;
+      background-color: ${acrylicBg}; color: ${editorFg};
+      border: ${glassBorder}; border-radius: 12px;
+      box-shadow: 0px 16px 40px rgba(0,0,0,0.35); padding: 12px; overflow: auto;
       z-index: 10000; font-size: 11px; white-space: pre; font-family: inherit;
-      box-sizing: border-box; line-height: 1.45; pointer-events: none;
+      box-sizing: border-box; line-height: 1.45;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
     `;
 
-    // Inject Rock-Solid Bulletproof Style Tags explicitly mapping Lezer tokens
+    // Inject premium, high-contrast CSS styling tags explicitly mapping official Lezer token signatures
     const styleTag = document.createElement("style");
     if (isDark) {
-      // Premium Matte Dark Palette (One-Dark / Dracula Hybrid)
       styleTag.textContent = `
-        #breadcrumbs-preview-popup .tok-keyword { color: #ff79c6; font-weight: bold; }
+        #breadcrumbs-preview-popup .tok-keyword { color: #c678dd; font-weight: bold; }
         #breadcrumbs-preview-popup .tok-string { color: #98c379; }
         #breadcrumbs-preview-popup .tok-number { color: #d19a66; }
-        #breadcrumbs-preview-popup .tok-comment { color: #7f848e; font-style: italic; }
-        #breadcrumbs-preview-popup .tok-variableName { color: #abb2bf; }
-        #breadcrumbs-preview-popup .tok-propertyName { color: #61afef; }
+        #breadcrumbs-preview-popup .tok-comment { color: #5c6370; font-style: italic; }
+        #breadcrumbs-preview-popup .tok-variableName { color: #61afef; }
+        #breadcrumbs-preview-popup .tok-propertyName { color: #e06c75; }
         #breadcrumbs-preview-popup .tok-definition { color: #e5c07b; }
         #breadcrumbs-preview-popup .tok-operator { color: #56b6c2; }
         #breadcrumbs-preview-popup .tok-punctuation { color: #abb2bf; opacity: 0.8; }
         #breadcrumbs-preview-popup .tok-meta { color: #d19a66; }
+        #breadcrumbs-preview-popup .tok-typeName { color: #e5c07b; }
+        #breadcrumbs-preview-popup .tok-tagName { color: #e06c75; font-weight: bold; }
+        #breadcrumbs-preview-popup .tok-attributeName { color: #d19a66; }
       `;
     } else {
-      // Premium Professional Light Palette (GitHub Light Inspired)
       styleTag.textContent = `
         #breadcrumbs-preview-popup .tok-keyword { color: #d73a49; font-weight: bold; }
         #breadcrumbs-preview-popup .tok-string { color: #032f62; }
@@ -323,36 +386,35 @@ class BreadcrumbsPlugin {
         #breadcrumbs-preview-popup .tok-operator { color: #d73a49; }
         #breadcrumbs-preview-popup .tok-punctuation { color: #24292e; opacity: 0.7; }
         #breadcrumbs-preview-popup .tok-meta { color: #e36209; }
+        #breadcrumbs-preview-popup .tok-typeName { color: #005cc5; }
+        #breadcrumbs-preview-popup .tok-tagName { color: #22863a; font-weight: bold; }
+        #breadcrumbs-preview-popup .tok-attributeName { color: #6f42c1; }
       `;
     }
     popup.appendChild(styleTag);
 
-    // Dynamic descriptor header item detailing source line metadata location tracking
     const headerLabel = document.createElement("div");
     headerLabel.style.cssText = `
       font-size: 10px; text-transform: uppercase; opacity: 0.55; margin-bottom: 8px;
-      border-bottom: 1px solid rgba(128, 128, 128, 0.2); padding-bottom: 4px; font-weight: bold;
+      border-bottom: 1px solid rgba(128, 128, 128, 0.15); padding-bottom: 4px; font-weight: bold;
       color: ${editorFg};
     `;
     headerLabel.textContent = `Preview: ${block.type} "${block.name}" (Line ${block.line})`;
     popup.appendChild(headerLabel);
 
     const codeTag = document.createElement("code");
-    // Inject parsed syntax matrix markup safely
-    codeTag.innerHTML = this.highlightCode(codeSnippet);
+    codeTag.innerHTML = this.highlightCodeSnippet(codeSnippet, filename, block);
     popup.appendChild(codeTag);
 
     document.body.appendChild(popup);
 
-    // Click backdrop listener to dismiss the overlay layer instantly
     const dismissPopup = () => {
       popup.remove();
-      scopeSpan.style.textDecoration = "none"; // Safely clears the custom typed underline feedback
+      scopeSpan.style.textDecoration = "none";
       document.removeEventListener("touchstart", dismissPopup);
       document.removeEventListener("mousedown", dismissPopup);
     };
 
-    // Minor execution timeout gap allows hardware layer locks to initialize before listening
     setTimeout(() => {
       document.addEventListener("touchstart", dismissPopup);
       document.addEventListener("mousedown", dismissPopup);
@@ -369,8 +431,6 @@ class BreadcrumbsPlugin {
 
     let currentFile = editorManager.activeFile;
     let filename = currentFile ? currentFile.filename.toLowerCase() : "";
-
-    // Safety check filter criteria restricting parsing workloads strictly to valid AST files
     const isSupportedFile = /\.(js|jsx|ts|tsx)$/.test(filename);
 
     if (!isSupportedFile) {
@@ -380,25 +440,19 @@ class BreadcrumbsPlugin {
       containerEl.style.display = "flex";
     }
 
-    // Recover layout structure position if container element gets unmounted implicitly
     if (!containerEl.parentElement && editor.dom) {
       editor.dom.prepend(containerEl);
     }
 
-    // Capture precise coordinates of active text range markers inside CodeMirror document
     const state = editor.state;
     const pos = state.selection.main.head;
     const fullCode = state.doc.toString();
-
-    // Call standalone AST lookup core engine to gather active structural scopes
     const validScopes = resolveBreadcrumbs(fullCode, pos);
 
-    // 2. HIGH PERFORMANCE DOM REFRESH: Only sweep away the dynamic path children
     while (pathEl.firstChild) {
       pathEl.removeChild(pathEl.firstChild);
     }
 
-    // Handle root execution block context mappings when node arrays return empty
     if (validScopes.length === 0) {
       const globalSpan = document.createElement("span");
       globalSpan.style.cssText =
@@ -410,7 +464,6 @@ class BreadcrumbsPlugin {
     } else {
       const fragment = document.createDocumentFragment();
 
-      // Shared separator reference blueprint to clone inside the render sequence
       const separatorBlueprint = document.createElement("span");
       separatorBlueprint.style.cssText =
         "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff)); opacity: 0.7; flex-shrink: 0;";
@@ -419,43 +472,34 @@ class BreadcrumbsPlugin {
       validScopes.forEach((block: ScopeBlock, index: number) => {
         const scopeSpan = document.createElement("span");
         scopeSpan.setAttribute("data-position", `${block.from}`);
-
-        // Make scope elements clickable and prevent unintended highlights on active touch gestures
         scopeSpan.style.cssText =
           "display: inline-flex; align-items: center; gap: 2px; cursor: pointer; user-select: none; -webkit-user-select: none;";
 
         const iconHtml = getIconByType(block.type);
         const isLast = index === validScopes.length - 1;
 
-        // Apply distinct geometric properties with clear visual priority on deepest scoped targets
         scopeSpan.innerHTML = `${iconHtml}<span style="color: ${getColorByType(block.type)}; font-weight: ${isLast ? "bold" : "normal"};">${block.name}</span>`;
 
-        // Interactive Code Navigation: Handle click events to relocate editor cursor
         scopeSpan.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
           if (editor && typeof editor.dispatch === "function") {
-            // Relocate CodeMirror text range selectors to the starting coordinates of target scope
             editor.dispatch({
               selection: { anchor: block.from, head: block.from },
               scrollIntoView: true,
             });
-            editor.focus(); // Pull primary hardware keyboard context straight back into views
+            editor.focus();
           }
         });
 
-        // --- Premium Feature Integration: Non-blocking Touch Interaction Loop ---
         scopeSpan.addEventListener("touchstart", (e) => {
           if (this.pressTimer) clearTimeout(this.pressTimer);
-
           this.pressTimer = setTimeout(() => {
-            // Long-press confirmed: Apply dynamic typed underline coloration instantly
             scopeSpan.style.textDecoration = `underline ${getColorByType(block.type)}`;
-            this.showCodePreviewPopup(block, fullCode, scopeSpan);
+            this.showCodePreviewPopup(block, fullCode, scopeSpan, filename);
           }, 480);
         });
 
-        // Cancel pending timers instantly if interaction yields context modifications
         scopeSpan.addEventListener("touchend", () => {
           if (this.pressTimer) clearTimeout(this.pressTimer);
         });
@@ -465,7 +509,6 @@ class BreadcrumbsPlugin {
 
         fragment.appendChild(scopeSpan);
 
-        // Inject directional chevron separator icons between individual block tracks
         if (index < validScopes.length - 1) {
           fragment.appendChild(separatorBlueprint.cloneNode(true));
         }
@@ -474,20 +517,17 @@ class BreadcrumbsPlugin {
       pathEl.appendChild(fragment);
     }
 
-    // Force horizontal scroll states to lock at the tail edge for visibility on long paths
     containerEl.scrollLeft = containerEl.scrollWidth;
   }
 
   /**
-   * Tears down and cleans up registered memory structures, event bindings, and DOM traces
-   * upon extension unmount actions.
+   * Tears down and cleans up registered memory structures, event bindings, and DOM traces.
    */
   public async destroy(): Promise<void> {
     if (this.intervalId) clearInterval(this.intervalId);
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
     if (this.pressTimer) clearTimeout(this.pressTimer);
 
-    // Purge active preview artifacts during teardown
     const existingPopup = document.getElementById("breadcrumbs-preview-popup");
     if (existingPopup) existingPopup.remove();
 
@@ -522,7 +562,7 @@ class BreadcrumbsPlugin {
   }
 }
 
-// Instantiate and bind entry point lifecycle Hooks to target system context definitions
+// Instantiate and bind entry point lifecycle Hooks
 const myBreadcrumbs = new BreadcrumbsPlugin();
 acode.setPluginInit(
   PLUGIN_ID,

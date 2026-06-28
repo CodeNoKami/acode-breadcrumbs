@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. This project adheres to Semantic Versioning.
 
+## [2.2.3] - 2026-06-28
+
+### Added
+
+- Introduced a premium **Acrylic Style (Frosted Glass) Backdrop Blur** UI effect for the preview popup.
+
+### Fixed
+
+- Resolved top-level syntax parsing errors for standalone class methods and properties in the preview by implementing a **Dynamic Class Wrapper** injection mechanism.
+- Upgraded code syntax token palettes to One Dark Pro (Dark) and GitHub Light (Light) standards for enhanced contrast and visibility across themes.
+
 ## [2.2.2] - 2026-06-28
 
 ### 🎨 Theme Adaptivity & Premium UX Enhancements
