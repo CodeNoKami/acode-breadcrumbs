@@ -1,6 +1,6 @@
 {
   "name": "lumen.breadcrumbs",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "A smart, theme-adaptive VS Code-style Breadcrumbs bar for JavaScript, JSX, TypeScript, and TSX files. Real-time visual code structural scopes (Classes, Methods, Functions, Callbacks) with inline colorful icons!",
   "main": "dist/main.js",
   "repository": "https://github.com/CodeNoKami/acode-breadcrumbs",
@@ -11,6 +11,7 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.43.1",
     "@lezer/common": "^1.5.2",
+    "@lezer/highlight": "^1.2.3",
     "@lezer/javascript": "^1.5.4",
     "@lezer/lr": "^1.4.10",
     "acode-plugin-types": "^1.11.7-patch.2",
@@ -25,7 +26,9 @@
     "dev": "node esbuild.config.mjs --serve",
     "build": "tsc --noEmit && node esbuild.config.mjs"
   },
-  "browserslist": ["> 0.25%, not dead"],
+  "browserslist": [
+    "> 0.25%, not dead"
+  ],
   "resolutions": {
     "terser": ">=5.14.2 ",
     "glob-parent": ">=5.1.2"

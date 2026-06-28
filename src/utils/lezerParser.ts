@@ -5,12 +5,29 @@ import { SyntaxNode } from "@lezer/common";
 const parser = jsParser.configure({ dialect: "ts jsx" });
 
 /**
- * Interface representing a verified structural scope point in the breadcrumbs hierarchy
+ * Interface representing a verified structural scope point in the breadcrumbs hierarchy.
+ * Extended with full geometric range indexes to drive advanced features like long-press lookups.
  */
 export interface ScopeBlock {
-  name: string;
-  type: string;
-  from: number; // Text offset position within the document buffer for interactive code navigation
+  id: string; // Unique structural token identifier (e.g., "method-4512")
+  name: string; // Readable block name identifier
+  type: string; // Standardized style categorization string
+  from: number; // Text index starting offset within the code buffer
+  to: number; // Text index closing offset within the code buffer
+  line: number; // Human-readable 1-based starting line number in the document
+}
+
+/**
+ * High-performance, allocation-free line counter.
+ * Iterates through the raw character stream directly to avoid string allocation or GC overhead.
+ */
+function getLineNumber(pos: number, code: string): number {
+  let line = 1;
+  const targetLimit = Math.min(pos, code.length);
+  for (let i = 0; i < targetLimit; i++) {
+    if (code[i] === "\n") line++;
+  }
+  return line;
 }
 
 /**
@@ -261,6 +278,7 @@ export function resolveBreadcrumbs(
   cursorPos: number,
 ): ScopeBlock[] {
   const scopes: ScopeBlock[] = [];
+
   try {
     const tree = parser.parse(code);
     let currentNode: SyntaxNode | null = tree.resolveInner(cursorPos, -1);
@@ -282,24 +300,34 @@ export function resolveBreadcrumbs(
       if (nodeType === "FinallyClause") {
         caughtClause = true;
         scopes.unshift({
+          id: `finally-${currentNode.from}`,
           name: "finally",
           type: "try-catch-finally",
           from: currentNode.from,
+          to: currentNode.to,
+          line: getLineNumber(currentNode.from, code),
         });
       } else if (nodeType === "CatchClause") {
         caughtClause = true;
         scopes.unshift({
+          id: `catch-${currentNode.from}`,
           name: "catch",
           type: "try-catch-finally",
           from: currentNode.from,
+          to: currentNode.to,
+          line: getLineNumber(currentNode.from, code),
         });
       } else if (nodeType === "TryStatement") {
-        if (!caughtClause)
+        if (!caughtClause) {
           scopes.unshift({
+            id: `try-${currentNode.from}`,
             name: "try",
             type: "try-catch-finally",
             from: currentNode.from,
+            to: currentNode.to,
+            line: getLineNumber(currentNode.from, code),
           });
+        }
         caughtClause = false; // Reset catch monitoring states
       }
       // Block Tier 2: Process Method Pipelines and Function calls (.map, .filter, event listeners)
@@ -315,11 +343,14 @@ export function resolveBreadcrumbs(
                 ? getCleanCallerName(leftNode, code)
                 : "window";
               scopes.unshift({
+                id: `listener-${currentNode.from}`,
                 name: callerName
                   ? `${callerName}.addEventListener`
                   : "addEventListener",
                 type: "listener",
                 from: currentNode.from,
+                to: currentNode.to,
+                line: getLineNumber(currentNode.from, code),
               });
             } else if (
               [
@@ -345,9 +376,12 @@ export function resolveBreadcrumbs(
                     ? `${callerName}.${methodName}`
                     : `.${methodName}`;
                 scopes.unshift({
+                  id: `method-chain-${currentNode.from}`,
                   name: displayName,
                   type: "method-chain",
                   from: currentNode.from,
+                  to: currentNode.to,
+                  line: getLineNumber(currentNode.from, code),
                 });
                 hasCapturedMethodChain = true;
               }
@@ -376,9 +410,12 @@ export function resolveBreadcrumbs(
               calleeNode.name === "Identifier"
             ) {
               scopes.unshift({
+                id: `function-${currentNode.from}`,
                 name: `${calleeName}()`,
                 type: "function",
                 from: currentNode.from,
+                to: currentNode.to,
+                line: getLineNumber(currentNode.from, code),
               });
             }
           }
@@ -427,9 +464,12 @@ export function resolveBreadcrumbs(
               typeOverride = "method";
             }
             scopes.unshift({
+              id: `${typeOverride}-${currentNode.from}`,
               name: nodeName,
               type: typeOverride,
               from: currentNode.from,
+              to: currentNode.to,
+              line: getLineNumber(currentNode.from, code),
             });
             processedNodes.add(parent.from);
             processedNodes.add(
@@ -440,12 +480,16 @@ export function resolveBreadcrumbs(
 
         if (!nodeName && nodeType === "FunctionExpression") {
           nodeName = getIdentifierName(currentNode, code);
-          if (nodeName)
+          if (nodeName) {
             scopes.unshift({
+              id: `${typeOverride}-${currentNode.from}`,
               name: nodeName,
               type: typeOverride,
               from: currentNode.from,
+              to: currentNode.to,
+              line: getLineNumber(currentNode.from, code),
             });
+          }
         }
 
         // Apply fallback handlers if structural properties are wrapped without formal assignments
@@ -453,9 +497,12 @@ export function resolveBreadcrumbs(
           const fallback = getLookbackName(currentNode.from, code);
           if (fallback) {
             scopes.unshift({
+              id: `${typeOverride}-${currentNode.from}`,
               name: fallback.name,
               type: typeOverride,
               from: currentNode.from,
+              to: currentNode.to,
+              line: getLineNumber(currentNode.from, code),
             });
           } else if (
             nodeType === "ArrowFunction" ||
@@ -510,9 +557,12 @@ export function resolveBreadcrumbs(
               const paramName = getParamName(currentNode, code);
               const defaultName = paramName ? paramName : "anonymous";
               scopes.unshift({
+                id: `${typeOverride}-${currentNode.from}`,
                 name: defaultName,
                 type: typeOverride,
                 from: currentNode.from,
+                to: currentNode.to,
+                line: getLineNumber(currentNode.from, code),
               });
             }
           }
@@ -540,9 +590,12 @@ export function resolveBreadcrumbs(
               continue; // Delegate tracking loop back to expressions handling blocks directly
             }
             scopes.unshift({
+              id: `variable-${currentNode.from}`,
               name: nodeName,
               type: "variable",
               from: currentNode.from,
+              to: currentNode.to,
+              line: getLineNumber(currentNode.from, code),
             });
           }
         } else if (
@@ -554,9 +607,12 @@ export function resolveBreadcrumbs(
             let finalType = "property";
             if (currentNode.getChild("Block")) finalType = "method";
             scopes.unshift({
+              id: `${finalType}-${currentNode.from}`,
               name: nodeName,
               type: finalType,
               from: currentNode.from,
+              to: currentNode.to,
+              line: getLineNumber(currentNode.from, code),
             });
           }
         } else if (mappedType === "static-block") {
@@ -610,9 +666,12 @@ export function resolveBreadcrumbs(
           )
         ) {
           scopes.unshift({
+            id: `${mappedType}-${currentNode.from}`,
             name: nodeName,
             type: mappedType,
             from: currentNode.from,
+            to: currentNode.to,
+            line: getLineNumber(currentNode.from, code),
           });
         }
       }
