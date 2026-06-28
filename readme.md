@@ -25,13 +25,13 @@ Symbols › 📄 UserRole › 🟢 config_list › 🗂️ properties
 
 ## ✨ Features
 
-- **🎯 Interactive Code Navigation [v2.2.0]:** Every scope element rendered on the bar is now **fully clickable**. Clicking a scope path item will instantly jump your editor cursor directly to the corresponding block's start position (`from` offset) and immediately refocus the editor so you can continue typing without friction.
+- **🎯 Interactive Code Navigation [v2.2.0+]:** Every scope element rendered on the bar is now **fully clickable**. Clicking a scope path item will instantly jump your editor cursor directly to the corresponding block's start position (`from` offset) and immediately refocus the editor so you can continue typing without friction.
 - **🚀 Hybrid Parsing Engine (AST + Lookback):** Combines the mechanical accuracy of CodeMirror's Lezer AST parser with an intelligent lookback text-slicing engine, making scope detection bulletproof against syntax variations.
 - **⚡ Pure Method Chaining Awareness:** No generic or messy code blocks in your bar. It safely isolates precise method names inside chains (e.g., extracts just `filter`, `map`, or `reduce` instead of the whole functional block) and intelligently tracks down the original caller identifier (e.g., `usersList.filter`).
 - **🟢 Granular Variable Tracking:** Full tracking awareness for standard localized variable definitions (`const`, `let`, `var`), mapping them down carefully within nested blocks.
 - **🛡️ Smart JSX Event Handler Filtering:** Intelligently detects and filters out inline arrow function parameters inside JSX attributes (e.g., avoids rendering trailing event arguments like `> e` from `onClick={(e) => {}}`), keeping deep JSX element component paths perfectly clean.
 - **🔒 Smart Environment Filter:** Automatically wakes up within JavaScript, JSX, TypeScript, and TSX configurations, while keeping itself cleanly hidden inside plain text, HTML, CSS, or Markdown files.
-- **🎨 Premium Thin-Line Icons & Matte Themes:** Packed with modern, lightweight geometric SVG icons (`stroke-width="1.3"`) crafted specifically for high-resolution mobile AMOLED screens. Colors adjust dynamically to both Light and Dark editor themes using a balanced material palette inspired by high-end desktop IDEs.
+- **🎨 Premium Thin-Line Icons & Matte Themes [v2.2.1]:** Packed with modern, lightweight geometric SVG icons (`stroke-width="1.3"`) calibrated for high-resolution mobile AMOLED screens. Built using a premium matte-pastel palette that balances high-contrast accessibility and eye care.
 
 ---
 
@@ -45,20 +45,23 @@ Symbols › 📄 UserRole › 🟢 config_list › 🗂️ properties
 
 ## 🎨 Icon & Theme Standards Map
 
-| Symbol Type           | UI Icon | Color Palette | Description / Node Type Match                                            |
-| --------------------- | ------- | ------------- | ------------------------------------------------------------------------ |
-| **Class / Interface** | 🔲      | `#ffcb6b`     | Warm Amber / OOP Bracket Frame Boundary                                  |
-| **Type Alias / Enum** | 📄      | `#00e5ff`     | Electric Cyan / TS Explicit Types & Definition Specs                     |
-| **Method**            | 📦      | `#c792ea`     | Soft Lavender Purple / VS-Code Style 3D Method Wireframe & Constructors  |
-| **Function**          | 𝑓       | `#82b1ff`     | Neon Soft Blue / Math Curvature f(x) Global Functions                    |
-| **Arrow / Callback**  | 🔄      | `#4ecc97`     | Mint Fresh Green / Lambda Expressions & `"anonymous"` Callback Fallbacks |
-| **Variable**          | 🟢      | `#7ee787`     | Fresh Ecosystem Leaf Green / Block-Scoped Local Variables                |
-| **Method Chain**      | 🍇      | `#a371f7`     | Elegant Deep Violet / Fluid Pipeline Operators (.map, .filter, .reduce)  |
-| **Array Expression**  | 🄶       | `#ffd54f`     | Soft Canary Yellow / Arrays, Seed Data & Tuple Lists                     |
-| **Object / Property** | 🗂️      | `#c3e88d`     | Pastel Emerald / Structural Object Literals & Map Keys                   |
-| **Control Flow**      | 🕒      | `#f78c6c`     | Soft Coral Orange / if-else, loops (for/while), switch, try-catch        |
-| **Static Block**      | 🔒      | `#ff5370`     | Premium Rose Red / Class Initializer Blocks                              |
-| **JSX Element**       | ⚛️      | `#80deea`     | Bright Sky React Blue / UI Components & Helix Fragments                  |
+| Symbol Type             | UI Icon | Color Palette | Description / Node Type Match                                            |
+| ----------------------- | ------- | ------------- | ------------------------------------------------------------------------ |
+| **Class / Interface**   | 🔲      | `#FFCB6B`     | Warm Amber Gold / OOP Bracket Frame Boundary                             |
+| **Type Alias / Enum**   | 📄      | `#00E5FF`     | Electric Cyan / TS Explicit Types & Definition Specs                     |
+| **Method**              | 📦      | `#C792EA`     | Soft Lavender Purple / VS-Code Style 3D Method Wireframe & Constructors  |
+| **Function**            | 𝑓       | `#82B1FF`     | Neon Soft Blue / Math Curvature f(x) Global Functions                    |
+| **Arrow / Callback**    | 🔄      | `#4ECC97`     | Mint Fresh Green / Lambda Expressions & `"anonymous"` Callback Fallbacks |
+| **Variable**            | 🟢      | `#7EE787`     | Fresh Leaf Green / Block-Scoped Local Variables                          |
+| **Method Chain**        | 🍇      | `#A371F7`     | Elegant Deep Violet / Fluid Pipeline Operators (.map, .filter, .reduce)  |
+| **Array Expression**    | 🄶       | `#FFD54F`     | Soft Canary Yellow / Arrays, Seed Data & Tuple Lists                     |
+| **Object / Property**   | 🗂️      | `#C3E88D`     | Pastel Emerald / Structural Object Keys & Property Definitions           |
+| **Object Literal**      | 📦      | `#A9FFB2`     | Pale Sage Green / Root Object Expression Initializations                 |
+| **Looping (for/while)** | 🔄      | `#FB923C`     | Energetic Tangerine / For, While, and Do-While Loop Constructs           |
+| **Conditional**         | 🕒      | `#F78C6C`     | Soft Coral Orange / If, Else-If, Else, and Switch Statements             |
+| **Static Block**        | 🔒      | `#FF5370`     | Premium Rose Red / Class Initializer Blocks                              |
+| **JSX Element**         | ⚛️      | `#80DEEA`     | Bright Sky React Blue / UI Components & Helix Fragments                  |
+| **Error Handling**      | 🛡️      | `#EF4444`     | Balanced Safety Red / Try, Catch, and Finally Diagnostics                |
 
 ---
 
@@ -79,7 +82,7 @@ If you are maintaining this plugin locally or building it from source inside you
 1. **Clone the repository:**
 
 ```bash
-git clone [https://github.com/CodeNoKami/acode-breadcrumbs.git](https://github.com/CodeNoKami/acode-breadcrumbs.git)
+git clone https://github.com/CodeNoKami/acode-breadcrumbs.git
 cd acode-breadcrumbs
 
 ```
@@ -102,7 +105,7 @@ npm run build
 
 ## 🛠️ Tech Stack & Configuration
 
-- **Version:** v2.2.0 (Interactive Navigation Release)
+- **Version:** v2.2.1 (Color Optimization & Refactor Release)
 - **Language:** TypeScript 5+ (Strict Type Checking)
 - **Parser Core:** CodeMirror 6 Lezer JavaScript/TypeScript Dialect Tree
 - **Framework Integration:** Acode Extension Lifecycle API
