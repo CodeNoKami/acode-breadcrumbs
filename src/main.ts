@@ -239,7 +239,10 @@ export class BreadcrumbsPlugin {
       this.activePopupCleanup();
     }
 
-    let codeSnippet = fullCode.slice(block.from, block.to).trim();
+    // Capture the absolute complete codeblock safely before performance truncation occurs
+    const completeBlockCode = fullCode.slice(block.from, block.to);
+
+    let codeSnippet = completeBlockCode.trim();
     if (codeSnippet.length > 2500) {
       codeSnippet =
         codeSnippet.slice(0, 2500) +
@@ -336,14 +339,94 @@ export class BreadcrumbsPlugin {
     titleBar.appendChild(dotContainer);
 
     const headerLabel = document.createElement("div");
-    headerLabel.style.cssText = `font-size: 10px; opacity: 0.55; font-weight: bold; color: ${editorFg}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`;
-    headerLabel.textContent = `(Line No. ${block.line}) - ${block.type} "${block.name}"`;
+    headerLabel.style.cssText = `
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 11px; opacity: 1; font-weight: bold; color: ${editorFg}; 
+      flex: 1; min-width: 0; line-height: 1.35; gap: 1px;
+    `;
+
+    const iconStr = getIconByType(block.type);
+    const colorStr = getColorByType(block.type);
+
+    headerLabel.innerHTML = `
+      <span style="opacity: 0.45; font-size: 9px; font-weight: normal; letter-spacing: 0.3px;">Ln.${block.line}</span>
+      <span style="color: ${colorStr}; display: flex; align-items: center; gap: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        ${iconStr} ${block.name}
+      </span>
+    `;
     titleBar.appendChild(headerLabel);
+
+    // --- Using Acode Native Class-based Copy Button ---
+    const copyBtn = document.createElement("span");
+    copyBtn.id = "breadcrumbs-popup-copy-btn";
+    copyBtn.className = "icon copy"; // Directly mapping into Acode core styles
+    copyBtn.style.cssText = `
+      margin-left: auto; display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+      color: ${editorFg}; opacity: 0.55; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0; box-sizing: border-box; font-size: 14px;
+    `;
+
+    copyBtn.addEventListener("mouseenter", () => {
+      copyBtn.style.opacity = "1";
+      copyBtn.style.backgroundColor = "rgba(128, 128, 128, 0.15)";
+    });
+    copyBtn.addEventListener("mouseleave", () => {
+      copyBtn.style.opacity = "0.55";
+      copyBtn.style.backgroundColor = "transparent";
+    });
+
+    let copyResetTimeout: any = null;
+    copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+
+      if (copyResetTimeout) clearTimeout(copyResetTimeout);
+
+      // Copy the complete non-truncated codeblock variant directly to user's device clipboard
+      navigator.clipboard
+        .writeText(completeBlockCode)
+        .then(() => {
+          copyBtn.className = "icon check"; // Switch to Acode success check icon
+          copyBtn.style.opacity = "1";
+          copyBtn.style.color = "#4ECC97"; // Highlight green on successful copy
+
+          copyResetTimeout = setTimeout(() => {
+            copyBtn.className = "icon copy";
+            copyBtn.style.opacity = "0.55";
+            copyBtn.style.color = editorFg;
+          }, 1800);
+        })
+        .catch(() => {
+          // Fallback programmatic structure just in case of sandboxed system environments
+          const textarea = document.createElement("textarea");
+          textarea.value = completeBlockCode;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            // @ts-ignore
+            document.execCommand("copy");
+            copyBtn.className = "icon check";
+            copyBtn.style.opacity = "1";
+            copyBtn.style.color = "#4ECC97";
+            copyResetTimeout = setTimeout(() => {
+              copyBtn.className = "icon copy";
+              copyBtn.style.opacity = "0.55";
+              copyBtn.style.color = editorFg;
+            }, 1800);
+          } catch (err) {}
+          document.body.removeChild(textarea);
+        });
+    });
+
+    titleBar.appendChild(copyBtn);
     popup.appendChild(titleBar);
 
     const contentRegion = document.createElement("div");
     contentRegion.style.cssText =
-      "flex: 1; overflow: auto; padding: 12px; line-height: 1.45;";
+      "flex: 1; overflow: auto; padding: 12px; line-height: 1.45; font-size:12px;";
 
     const codeTag = document.createElement("code");
     codeTag.style.cssText = "display: block; white-space: pre;";
@@ -400,6 +483,7 @@ export class BreadcrumbsPlugin {
     let preNavStyles = { width: "", height: "", top: "", left: "" };
 
     const dismissPopup = () => {
+      if (copyResetTimeout) clearTimeout(copyResetTimeout);
       popup.remove();
       scopeSpan.style.textDecoration = "none";
       document.removeEventListener("touchstart", handleOutsideClick);
