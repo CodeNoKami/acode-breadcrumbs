@@ -1,3 +1,13 @@
+## [2.4.0] - 2026-06-29
+
+### Changed
+
+- **VSCode-Parity Architectural Mapping:** Refactored the structural path sequence to anchor strictly onto the `Filename › Scope › Sub-Scope` layout. The breadcrumbs bar now appends the active filename as the root node before drilling down into the code's structural tree, mirroring desktop VSCode's exact navigation format.
+
+### Removed
+
+- **Control-Flow & Loop Scope Filtering:** Stripped out all low-level control-flow nodes (including `if`, `for`, `while`, `do-while`, and `switch` blocks) from the Lezer AST resolution pipeline. By exclusively tracking high-level declarations (such as Classes, Functions, and Methods), this completely eliminates layout clutter and delivers a clean, distraction-free architectural outline.
+
 ## [2.3.3] - 2026-06-28
 
 ### Added

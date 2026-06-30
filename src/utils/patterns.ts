@@ -1,72 +1,61 @@
 /**
+ * Supported active structural scope types matching lezerParser AST outputs
+ */
+export type ScopeType =
+  | "class"
+  | "interface"
+  | "type"
+  | "enum"
+  | "method"
+  | "function"
+  | "arrow"
+  | "property"
+  | "object"
+  | "array"
+  | "variable"
+  | "jsx";
+
+/**
  * Resolves a hexadecimal color token optimized for dark/AMOLED themes with high contrast,
- * visual balance, eye care, and distinct mapping for each scope block.
- * @param type - The registered layout scope type string
+ * modern neon accents, visual balance, and distinct mapping for active scopes.
+ * @param type - The registered layout scope type
  * @returns HEX color string or functional CSS variable fallback
  */
-export function getColorByType(type: string): string {
+export function getColorByType(type: ScopeType | string): string {
   switch (type) {
-    // 🧱 OOP Structures (Warm Amber, Soft Lavender, & Neon Blue)
+    // 🧱 Object-Oriented Structures (Vibrant Gold & Ice Cyan)
     case "class":
+      return "#FFB834"; // Vivid Amber Gold (Strong structural anchor)
     case "interface":
-      return "#FFCB6B"; // Warm Amber Gold (High Visibility structural boundaries)
-    case "method":
-      return "#C792EA"; // Soft Lavender Purple (Distinct from method chains)
-    case "function":
-      return "#82B1FF"; // Neon Soft Blue (Global execution frames)
+      return "#46D9FF"; // Bright Ice Cyan (Blueprint specifications)
 
-    // 🔗 Fluid Method Chains (Elegant Deep Violet - clearly distinct from Method Purple)
-    case "method-chain":
-      return "#A371F7"; // Elegant Deep Violet
-
-    // 🏷️ Types & Properties (Electric Cyan & Pastel Emerald Keyframes)
+    // 🏷️ Type & Enum Definitions (Teal Variants)
     case "type":
+      return "#10E5FA"; // Electric Turquoise
     case "enum":
-      return "#00E5FF"; // Electric Cyan (TS explicit type safety indicators)
-    case "property":
-    case "objectKey":
-      return "#C3E88D"; // Pastel Emerald (Structural Object properties & Map keys)
+      return "#00F5D4"; // Neon Mint Cyan (Constant collection indicators)
 
-    // 📦 Data Structures (Warm Yellow, Leaf Green, & Soft Mint)
-    case "object":
-      return "#A9FFB2"; // Pale Sage Green (Differentiates Object literals from Properties)
-    case "array":
-      return "#FFD54F"; // Soft Canary Yellow (Tuples, matrices, and collection structures)
-    case "variable":
-      return "#7EE787"; // Fresh Leaf Green (Standard localized block-scoped assignments)
-
-    // 🚀 Execution Blocks & Events (Mint, Crimson, Coral, & Sky Teal)
+    // ⚡ Logic & Execution Scopes (Deep Lavender, Cobalt Blue & Emerald Lambda)
+    case "method":
+      return "#D694FF"; // Vivid Neon Lavender (Object/Class members)
+    case "function":
+      return "#60A5FA"; // Premium Cobalt Blue (Global execution frames)
     case "arrow":
-    case "callback":
-      return "#4ECC97"; // Mint Fresh Green (Lambda expressions & anonymous scopes)
-    case "listener":
-      return "#FB7185"; // Soft Crimson Salmon (Interactive hardware & browser event hooks)
-    case "static-block":
-      return "#FF5370"; // Premium Rose Red (Class initialization runtime components)
+      return "#34D399"; // Emerald Mint Green (Inline Lambdas & Chain Callbacks)
+
+    // 📦 Objects, Arrays & Property Bindings (Pistachio, Sage & Warm Canary)
+    case "property":
+      return "#99E65F"; // Bright Pistachio Green (Key-value access)
+    case "object":
+      return "#6EE7B7"; // Soft Teal Sage (Data configurations)
+    case "array":
+      return "#FCD34D"; // Warm Canary Yellow (Lists, Tuples & Matrices)
+    case "variable":
+      return "#4ADE80"; // Fresh Leaf Green (Block-scoped assignments)
+
+    // ⚛️ UI / Virtual DOM Components
     case "jsx":
-      return "#80DEEA"; // Bright Sky React Blue (Virtual DOM components & JSX/TSX tags)
-
-    // 🔄 Looping Scopes (Vivid Energetic Tangerine)
-    case "looping":
-    case "for":
-    case "while":
-    case "do":
-      return "#FB923C"; // Energetic Tangerine Orange
-
-    // 🛣️ Conditional Scopes (Soft Coral Orange - completely distinct from Loop Tangerine)
-    case "conditional":
-    case "if":
-    case "else-if":
-    case "else":
-    case "switch":
-      return "#F78C6C"; // Soft Coral Orange
-
-    // 🛡️ Error Handling Scopes (Vivid Safety Red)
-    case "try-catch-finally":
-    case "try":
-    case "catch":
-    case "finally":
-      return "#EF4444"; // Balanced Safety Red (High-alert diagnostics capture)
+      return "#22D3EE"; // React Sky Cyan
 
     default:
       return "var(--text-color, var(--primary-text-color, #ffffff))";
@@ -74,67 +63,53 @@ export function getColorByType(type: string): string {
 }
 
 /**
- * Generates an inline vector SVG icon string mapped to specific structural scopes
- * @param type - The target element configuration type string
+ * Generates an inline vector SVG icon string mapped to specific structural scopes.
+ * Optimized with balanced geometric stroke paths for professional 16x16 viewboxes.
+ * @param type - The target element configuration type
  * @returns Clean, standard-compliant XML/SVG inline asset string
  */
-export function getIconByType(type: string): string {
+export function getIconByType(type: ScopeType | string): string {
   const color = getColorByType(type);
-  const fillMode = type === "listener" ? color : "none";
-  const svgStyle = `width="12" height="12" viewBox="0 0 16 16" fill="${fillMode}" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px; display:inline-block;"`;
+  const svgStyle = `width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="${color}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px; display:inline-block;"`;
 
   switch (type) {
     case "class":
+      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2.5"/><circle cx="8" cy="8" r="2"/></svg>`;
+
     case "interface":
-      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5.5 5.5H4v5h1.5M10.5 5.5H12v5h-1.5"/></svg>`;
-    case "method":
-      return `<svg ${svgStyle}><path d="M8 1.5l5.5 3.2v6.6L8 14.5l-5.5-3.2V4.7z M2.5 4.7L8 8l5.5-3.3 M8 8v6.5"/></svg>`;
-    case "function":
-      return `<svg ${svgStyle}><path d="M11 2.5c-.8 0-1.5.7-1.8 1.5L6.8 13.5c-.3.8-1 1.5-1.8 1.5 M3.5 8h7"/></svg>`;
-    case "property":
-      return `<svg ${svgStyle}><circle cx="5" cy="11" r="2.5"/><path d="M7 9l6.5-6.5M10.5 5l1.5 1.5M12 3.5l1.5 1.5"/></svg>`;
-    case "method-chain":
-      return `<svg ${svgStyle}><circle cx="4" cy="4" r="1.5"/><circle cx="12" cy="12" r="1.5"/><path d="M4 5.5v2.5a2 2 0 0 0 2 2h4a2 2 0 0 1 2 2v2.5"/></svg>`;
+      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2.5" stroke-dasharray="2 1.5"/><path d="M6 8h4"/></svg>`;
 
-    case "looping":
-    case "for":
-    case "while":
-    case "do":
-      return `<svg ${svgStyle}><path d="M2.5 8a5.5 5.5 0 1 1 1.5 3.5m0 0V9m0 2.5H6"/></svg>`;
-
-    case "conditional":
-    case "if":
-    case "else-if":
-    case "else":
-    case "switch":
-      return `<svg ${svgStyle}><path d="M4 2v12M4 8a3 3 0 0 0 3 3h5M11.5 8.5L14 11l-2.5 2.5"/></svg>`;
-    case "try-catch-finally":
-    case "try":
-    case "catch":
-    case "finally":
-      return `<svg ${svgStyle}><path d="M2.5 5.5V3.5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v2M2.5 10.5v2a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-2M5.5 8h5"/></svg>`;
     case "type":
+      return `<svg ${svgStyle}><path d="M3 4h10M8 4v9M5.5 13h5"/></svg>`;
+
     case "enum":
-      return `<svg ${svgStyle}><path d="M2.5 4.5h8.5L14.5 8l-3.5 3.5H2.5z M5.5 8h2"/></svg>`;
-    case "variable":
-      return `<svg ${svgStyle}><rect x="2.5" y="4.5" width="11" height="7" rx="1.5"/><path d="M6 6.5l2 3 2-3"/></svg>`;
+      return `<svg ${svgStyle}><path d="M3 4h10M3 8h10M3 12h10M3 4h.01M3 8h.01M3 12h.01"/></svg>`;
+
+    case "method":
+      return `<svg ${svgStyle}><path d="M8 3l5 2.5V11l-5 2.5L3 11V5.5z M8 8v5.5 M8 8L3 5.5 M8 8l5-2.5"/></svg>`;
+
+    case "function":
+      return `<svg ${svgStyle}><path d="M5.5 13.5c1.2 0 1.8-1 2.2-3.5s.8-6.5 2.8-6.5M3.5 7.5h8"/></svg>`;
 
     case "arrow":
-    case "callback":
-      return `<svg ${svgStyle}><path d="M2.5 5h6.5a2.5 2.5 0 0 1 0 5H2.5 M10.5 2.5L13.5 5l-3.5 2.5"/></svg>`;
+      return `<svg ${svgStyle}><path d="M3 8h10M9 4l4 4-4 4"/></svg>`;
+
+    case "property":
+      return `<svg ${svgStyle}><circle cx="5" cy="11" r="2"/><path d="M6.5 9.5l5.5-5.5M10 3l3 3"/></svg>`;
+
+    case "object":
+      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 10h4"/></svg>`;
 
     case "array":
-      return `<svg ${svgStyle}><path d="M5.5 2.5H3v11h2.5M10.5 2.5H13v11h-2.5"/></svg>`;
-    case "object":
-    case "objectKey":
-      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5.5 5.5h5M5.5 8.5h5M5.5 11.5h3"/></svg>`;
-    case "static-block":
-      return `<svg ${svgStyle}><rect x="3" y="6.5" width="10" height="7" rx="1"/><path d="M4.5 6.5V4a3.5 3.5 0 0 1 7 0v2.5"/></svg>`;
+      return `<svg ${svgStyle}><path d="M4.5 2H2v12h2.5M11.5 2H14v12h-2.5M5.5 8h5"/></svg>`;
+
+    case "variable":
+      return `<svg ${svgStyle}><rect x="2" y="3" width="12" height="10" rx="2"/><circle cx="6" cy="8" r="1.5"/><path d="M9 8h2"/></svg>`;
+
     case "jsx":
-      return `<svg ${svgStyle}><ellipse cx="8" cy="8" rx="6.5" ry="2.5" transform="rotate(30 8 8)"/><ellipse cx="8" cy="8" rx="6.5" ry="2.5" transform="rotate(-30 8 8)"/><circle cx="8" cy="8" r="1" fill="${color}"/></svg>`;
-    case "listener":
-      return `<svg ${svgStyle}><path d="M9.5 1.5L2.5 9h5v5.5l7-7.5h-5z"/></svg>`;
+      return `<svg ${svgStyle}><path d="M5 4L1 8l4 4M11 4l4 4-4 4M9 3L7 13"/></svg>`;
+
     default:
-      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 5.5L7.5 8 5 10.5M9 10.5h2.5"/></svg>`;
+      return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 5.5L7.5 8 5 10.5"/></svg>`;
   }
 }

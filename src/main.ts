@@ -11,6 +11,7 @@ declare var acode: any;
 export class BreadcrumbsPlugin {
   private container: HTMLDivElement | null = null;
   private pathContainer: HTMLSpanElement | null = null;
+  private prefixTextEl: HTMLSpanElement | null = null; // 🌟 Added: Target reference for dynamic filename syncing
   private intervalId: any = null;
   private debounceTimeout: any = null;
   private pressTimer: any = null;
@@ -19,7 +20,7 @@ export class BreadcrumbsPlugin {
 
   // --- Optimization State Caches ---
   private lastDocString: string = "";
-  private lastScopesFingerprint: string = ""; // v2.3.3 Nested Scope Fix Engine
+  private lastScopesFingerprint: string = "";
   private activePopupCleanup: (() => void) | null = null;
   private blockClickBypass: boolean = false;
 
@@ -54,10 +55,20 @@ export class BreadcrumbsPlugin {
       z-index: 10; height: 28px;
     `;
 
+    let currentFile = editorManager.activeFile;
+    let filename = currentFile ? currentFile.filename.toLowerCase() : "";
+
     const prefix = document.createElement("span");
     prefix.style.cssText =
       "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff)); flex-shrink: 0;";
-    prefix.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: none; stroke: var(--text-color, var(--primary-text-color, #ffffff)); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; margin-right: 5px;"><path d="M2 4h5v4H2zM9 4h5v2H9zm0 6h5v2H9zm-7 2h5v2H2z"/><path d="M4.5 8v4M11.5 6v4"/></svg>Breadcrumbs`;
+    // 🌟 Modified: Render only the SVG wrapper structure here
+    prefix.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: none; stroke: var(--text-color, var(--primary-text-color, #ffffff)); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; margin-right: 5px;"><path d="M2 4h5v4H2zM9 4h5v2H9zm0 6h5v2H9zm-7 2h5v2H2z"/><path d="M4.5 8v4M11.5 6v4"/></svg>`;
+
+    // 🌟 Added: Create a specific text node for filename to enable reactive data-binding
+    this.prefixTextEl = document.createElement("span");
+    this.prefixTextEl.textContent = filename;
+    prefix.appendChild(this.prefixTextEl);
+
     this.container.appendChild(prefix);
 
     const baseSeparator = document.createElement("span");
@@ -130,9 +141,6 @@ export class BreadcrumbsPlugin {
     }
   }
 
-  /**
-   * Safe Debouncer optimized at 150ms to defend mobile CPU thermal scheduling
-   */
   private queueUpdate(editor: EditorView) {
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
     this.debounceTimeout = setTimeout(() => {
@@ -234,12 +242,10 @@ export class BreadcrumbsPlugin {
     const editor = this.currentEditor;
     if (!editor || !editor.dom) return;
 
-    // Direct invocation of the previous cleanup closure to prevent active memory leaks
     if (this.activePopupCleanup) {
       this.activePopupCleanup();
     }
 
-    // Capture the absolute complete codeblock safely before performance truncation occurs
     const completeBlockCode = fullCode.slice(block.from, block.to);
 
     let codeSnippet = completeBlockCode.trim();
@@ -356,10 +362,9 @@ export class BreadcrumbsPlugin {
     `;
     titleBar.appendChild(headerLabel);
 
-    // --- Using Acode Native Class-based Copy Button ---
     const copyBtn = document.createElement("span");
     copyBtn.id = "breadcrumbs-popup-copy-btn";
-    copyBtn.className = "icon copy"; // Directly mapping into Acode core styles
+    copyBtn.className = "icon copy";
     copyBtn.style.cssText = `
       margin-left: auto; display: inline-flex; align-items: center; justify-content: center;
       width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
@@ -383,13 +388,12 @@ export class BreadcrumbsPlugin {
 
       if (copyResetTimeout) clearTimeout(copyResetTimeout);
 
-      // Copy the complete non-truncated codeblock variant directly to user's device clipboard
       navigator.clipboard
         .writeText(completeBlockCode)
         .then(() => {
-          copyBtn.className = "icon check"; // Switch to Acode success check icon
+          copyBtn.className = "icon check";
           copyBtn.style.opacity = "1";
-          copyBtn.style.color = "#4ECC97"; // Highlight green on successful copy
+          copyBtn.style.color = "#4ECC97";
 
           copyResetTimeout = setTimeout(() => {
             copyBtn.className = "icon copy";
@@ -398,7 +402,6 @@ export class BreadcrumbsPlugin {
           }, 1800);
         })
         .catch(() => {
-          // Fallback programmatic structure just in case of sandboxed system environments
           const textarea = document.createElement("textarea");
           textarea.value = completeBlockCode;
           textarea.style.position = "fixed";
@@ -434,7 +437,6 @@ export class BreadcrumbsPlugin {
     contentRegion.appendChild(codeTag);
     popup.appendChild(contentRegion);
 
-    // --- Production Mobile Touch Drag Resize Implementation ---
     const resizeHandle = document.createElement("div");
     resizeHandle.style.cssText =
       "position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: se-resize; background: linear-gradient(135deg, transparent 40%, rgba(128,128,128,0.4) 100%); border-bottom-right-radius: 12px; z-index: 10005;";
@@ -462,7 +464,7 @@ export class BreadcrumbsPlugin {
       if (e.touches.length === 0) return;
       e.preventDefault();
       e.stopPropagation();
-      if (isMaximized) return; // Block resizing during macro layouts
+      if (isMaximized) return;
       const deltaX = e.touches[0].clientX - startTouchX;
       const deltaY = e.touches[0].clientY - startTouchY;
       popup.style.width = `${Math.max(200, startWidth + deltaX)}px`;
@@ -549,6 +551,13 @@ export class BreadcrumbsPlugin {
       containerEl.style.display = "flex";
     }
 
+    // 🌟 Added: Smoothly synchronize the active filename on every verification pass
+    if (this.prefixTextEl) {
+      this.prefixTextEl.textContent = currentFile
+        ? currentFile.filename
+        : "Breadcrumbs";
+    }
+
     if (!containerEl.parentElement && editor.dom) {
       editor.dom.prepend(containerEl);
     }
@@ -557,21 +566,18 @@ export class BreadcrumbsPlugin {
     const pos = state.selection.main.head;
     const fullCode = state.doc.toString();
 
-    // 1. AST Engine ကနေ လက်ရှိ Scope Blocks တွေကို အရင်အရယူမယ်
     const validScopes = resolveBreadcrumbs(fullCode, pos);
 
-    // 2. ရလာတဲ့ Scopes တွေပေါ်မူတည်ပြီး Unique Structural Fingerprint တစ်ခု ထုတ်လုပ်မယ်
     let currentFingerprint = "";
     for (let i = 0; i < validScopes.length; i++) {
       currentFingerprint += `${validScopes[i].type}-${validScopes[i].from}-${validScopes[i].to}|`;
     }
 
-    // 3. High-Performance Scope Cache Validation Guard (Nested Scope ပြဿနာကို အမြစ်ပြတ်ရှင်းလင်းထားသည်)
     if (
       fullCode === this.lastDocString &&
       currentFingerprint === this.lastScopesFingerprint
     ) {
-      return; // Structural Cache ကိုက်ညီပါက DOM Rebuild လုပ်ခြင်းကို ကျော်ခွမည်
+      return;
     }
     this.lastDocString = fullCode;
     this.lastScopesFingerprint = currentFingerprint;
@@ -583,8 +589,8 @@ export class BreadcrumbsPlugin {
     if (validScopes.length === 0) {
       const globalSpan = document.createElement("span");
       globalSpan.style.cssText =
-        "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff));";
-      globalSpan.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: none; stroke: var(--text-color, var(--primary-text-color, #ffffff)); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; margin-right: 5px;"><circle cx="8" cy="8" r="7"/><path d="M1 8h14M8 1a12 12 0 0 1 0 14M8 1a12 12 0 0 0 0 14"/></svg>Global`;
+        "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff)); pointer-events: none;";
+      globalSpan.innerHTML = "...";
       pathEl.appendChild(globalSpan);
     } else {
       const fragment = document.createDocumentFragment();
@@ -606,7 +612,6 @@ export class BreadcrumbsPlugin {
         scopeSpan.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          // Collision Guard: Prevent click jumping if this touch cycle triggered a long-press popup
           if (this.blockClickBypass) return;
 
           if (editor && typeof editor.dispatch === "function") {
@@ -622,7 +627,7 @@ export class BreadcrumbsPlugin {
           this.blockClickBypass = false;
           if (this.pressTimer) clearTimeout(this.pressTimer);
           this.pressTimer = setTimeout(() => {
-            this.blockClickBypass = true; // Block imminent collision click event sequence
+            this.blockClickBypass = true;
             scopeSpan.style.textDecoration = `underline ${getColorByType(block.type)}`;
             this.showCodePreviewPopup(block, fullCode, scopeSpan, filename);
           }, 480);
@@ -630,7 +635,6 @@ export class BreadcrumbsPlugin {
 
         scopeSpan.addEventListener("touchend", () => {
           if (this.pressTimer) clearTimeout(this.pressTimer);
-          // Slowly release click bypass constraint to handle late native touch injections safely
           setTimeout(() => {
             this.blockClickBypass = false;
           }, 100);
@@ -688,6 +692,7 @@ export class BreadcrumbsPlugin {
       this.container = null;
     }
     this.pathContainer = null;
+    this.prefixTextEl = null; // Clean target reference allocation
     this.currentEditor = null;
     this.lastDocString = "";
     this.lastScopesFingerprint = "";

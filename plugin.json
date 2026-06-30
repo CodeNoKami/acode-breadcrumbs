@@ -3,7 +3,7 @@
   "id": "lumen.breadcrumbs",
   "name": "Breadcrumbs (JS,TS, JSX, TSX)",
   "main": "main.js",
-  "version": "2.3.4",
+  "version": "2.4.0",
   "repository": "https://github.com/CodeNoKami/acode-breadcrumbs",
   "icon": "icon.png",
   "minVersionCode": 1001,

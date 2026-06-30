@@ -23,43 +23,44 @@ export function getScopeType(nodeType: string): string | null {
     case "EnumDeclaration":
       return "enum";
     case "FunctionDeclaration":
+    case "ArrowFunction":
+    case "FunctionExpression":
       return "function";
     case "MethodDeclaration":
     case "MethodType":
       return "method";
-    case "StaticBlock":
-      return "static-block";
     case "JSXElement":
       return "jsx";
-    case "ForStatement":
-    case "WhileStatement":
-    case "DoStatement":
-      return "looping";
-    case "SwitchStatement":
-    case "IfStatement":
-      return "conditional";
-    case "TryStatement":
-    case "CatchClause":
-    case "FinallyClause":
-      return "try-catch-finally";
     case "ObjectExpression":
       return "object";
     case "ArrayExpression":
       return "array";
-    case "ArrowFunction":
-      return "arrow";
-    case "FunctionExpression":
-      return "function";
     case "Property":
     case "PropertyDeclaration":
       return "property";
-    case "VariableDeclarator":
+    case "VariableDeclaration": // 🌟 Fixed: Changed from VariableDeclarator to match Lezer JS AST
+    case "AssignmentExpression":
       return "variable";
     default:
       return null;
   }
 }
 
+const directNameTokens = [
+  "VariableDefinition",
+  "TypeDefinition",
+  "PropertyDefinition",
+  "PrivatePropertyDefinition",
+  "PrivatePropertyName",
+  "PrivateIdentifier",
+  "PropertyName",
+  "JSXIdentifier",
+  "JSXBuiltinIdentifier",
+  "VariableName",
+  "Identifier",
+];
+
+// 🌟 Highly Robust Identifier Extractor using Recursive Subtree Search
 function getIdentifierName(
   node: SyntaxNode | null,
   code: string,
@@ -73,25 +74,23 @@ function getIdentifierName(
     return "constructor";
   }
 
-  const directNameTokens = [
-    "VariableDefinition",
-    "TypeDefinition",
-    "PropertyDefinition",
-    "PrivatePropertyDefinition",
-    "PrivatePropertyName",
-    "PropertyName",
-    "JSXIdentifier",
-    "JSXBuiltinIdentifier",
-    "VariableName",
-    "Identifier",
-  ];
-
-  let child = node.firstChild;
-  while (child) {
-    if (directNameTokens.includes(child.name)) {
-      return code.slice(child.from, child.to).trim();
+  // Deep search helper to find the first valid name token within the node's hierarchy
+  function findNameNode(n: SyntaxNode): SyntaxNode | null {
+    if (directNameTokens.includes(n.name)) {
+      return n;
     }
-    child = child.nextSibling;
+    let child = n.firstChild;
+    while (child) {
+      const found = findNameNode(child);
+      if (found) return found;
+      child = child.nextSibling;
+    }
+    return null;
+  }
+
+  const nameNode = findNameNode(node);
+  if (nameNode) {
+    return code.slice(nameNode.from, nameNode.to).trim();
   }
   return null;
 }
@@ -224,9 +223,7 @@ export function resolveBreadcrumbs(
   try {
     const tree = parser.parse(code);
     let currentNode: SyntaxNode | null = tree.resolveInner(cursorPos, -1);
-    let caughtClause = false;
-    let hasCapturedMethodChain = false;
-    const processedNodes = new Set<string>(); // Upgraded to string Composite Key set
+    const processedNodes = new Set<string>();
 
     while (currentNode) {
       const nodeType = currentNode.name;
@@ -238,131 +235,8 @@ export function resolveBreadcrumbs(
         continue;
       }
 
-      // Block Tier 1: Exception Handlers
-      if (nodeType === "FinallyClause") {
-        caughtClause = true;
-        scopes.unshift({
-          id: `finally-${currentNode.from}`,
-          name: "finally",
-          type: "try-catch-finally",
-          from: currentNode.from,
-          to: currentNode.to,
-          line: 0, // Deferred allocation
-        });
-      } else if (nodeType === "CatchClause") {
-        caughtClause = true;
-        scopes.unshift({
-          id: `catch-${currentNode.from}`,
-          name: "catch",
-          type: "try-catch-finally",
-          from: currentNode.from,
-          to: currentNode.to,
-          line: 0,
-        });
-      } else if (nodeType === "TryStatement") {
-        if (!caughtClause) {
-          scopes.unshift({
-            id: `try-${currentNode.from}`,
-            name: "try",
-            type: "try-catch-finally",
-            from: currentNode.from,
-            to: currentNode.to,
-            line: 0,
-          });
-        }
-        caughtClause = false;
-      }
-      // Block Tier 2: Pipelines & Expressions
-      else if (nodeType === "CallExpression") {
-        const memberExpr = currentNode.getChild("MemberExpression");
-        if (memberExpr) {
-          const propNode = memberExpr.getChild("PropertyName");
-          if (propNode) {
-            const methodName = code.slice(propNode.from, propNode.to).trim();
-            if (methodName === "addEventListener") {
-              const leftNode = memberExpr.firstChild;
-              const callerName = leftNode
-                ? getCleanCallerName(leftNode, code)
-                : "window";
-              scopes.unshift({
-                id: `listener-${currentNode.from}`,
-                name: callerName
-                  ? `${callerName}.addEventListener`
-                  : "addEventListener",
-                type: "listener",
-                from: currentNode.from,
-                to: currentNode.to,
-                line: 0,
-              });
-            } else if (
-              [
-                "filter",
-                "map",
-                "reduce",
-                "forEach",
-                "then",
-                "catch",
-                "finally",
-                "split",
-                "join",
-              ].includes(methodName)
-            ) {
-              if (!hasCapturedMethodChain) {
-                const leftNode = memberExpr.firstChild;
-                const callerName = leftNode
-                  ? getCleanCallerName(leftNode, code)
-                  : null;
-                const displayName =
-                  callerName && callerName !== "return"
-                    ? `${callerName}.${methodName}`
-                    : `.${methodName}`;
-                scopes.unshift({
-                  id: `method-chain-${currentNode.from}`,
-                  name: displayName,
-                  type: "method-chain",
-                  from: currentNode.from,
-                  to: currentNode.to,
-                  line: 0,
-                });
-                hasCapturedMethodChain = true;
-              }
-            }
-          }
-        } else {
-          const calleeNode = currentNode.firstChild;
-          if (calleeNode) {
-            const calleeName = code
-              .slice(calleeNode.from, calleeNode.to)
-              .trim();
-            if (
-              [
-                "Date",
-                "Math",
-                "Set",
-                "Map",
-                "Array",
-                "Object",
-                "String",
-                "Number",
-                "Boolean",
-              ].includes(calleeName) ||
-              calleeNode.name === "VariableName" ||
-              calleeNode.name === "Identifier"
-            ) {
-              scopes.unshift({
-                id: `function-${currentNode.from}`,
-                name: `${calleeName}()`,
-                type: "function",
-                from: currentNode.from,
-                to: currentNode.to,
-                line: 0,
-              });
-            }
-          }
-        }
-      }
-      // Block Tier 3: Anonymous Data Sets & Callbacks
-      else if (
+      // Block Tier 1: Anonymous Data Sets & Callbacks (Functions, Object Literals, Array Methods)
+      if (
         [
           "ObjectExpression",
           "ArrayExpression",
@@ -371,20 +245,37 @@ export function resolveBreadcrumbs(
         ].includes(nodeType)
       ) {
         let nodeName: string | null = null;
-        let typeOverride = mappedType!;
-        if (nodeType === "ObjectExpression") typeOverride = "object";
-        else if (nodeType === "ArrayExpression") typeOverride = "array";
-        else if (nodeType === "ArrowFunction") typeOverride = "arrow";
-        else if (nodeType === "FunctionExpression") typeOverride = "function";
+        let typeOverride = mappedType || "function";
 
-        let parent = currentNode.parent;
-        if (parent && parent.name === "VariableDeclaration") {
-          parent = parent.getChild("VariableDeclarator") || parent;
+        let insideJSXAttribute = false;
+        let checkJSX = currentNode.parent;
+        while (checkJSX) {
+          if (
+            checkJSX.name === "JSXExpressionContainer" ||
+            checkJSX.name === "JSXAttribute"
+          ) {
+            insideJSXAttribute = true;
+            break;
+          }
+          if (
+            [
+              "FunctionDeclaration",
+              "ClassDeclaration",
+              "VariableDeclaration",
+            ].includes(checkJSX.name)
+          )
+            break;
+          checkJSX = checkJSX.parent;
+        }
+        if (insideJSXAttribute) {
+          currentNode = currentNode.parent;
+          continue;
         }
 
+        const parent = currentNode.parent;
         if (
           parent &&
-          (parent.name === "VariableDeclarator" ||
+          (parent.name === "VariableDeclaration" || // 🌟 Fixed from VariableDeclarator
             parent.name === "Property" ||
             parent.name === "PropertyDeclaration" ||
             parent.name === "AssignmentExpression")
@@ -448,6 +339,7 @@ export function resolveBreadcrumbs(
             nodeType === "FunctionExpression"
           ) {
             let isStandardCallback = false;
+            let callbackLabel = "&lt;function&gt;";
             let parentNode = currentNode.parent;
 
             if (parentNode && parentNode.name === "ArgList") {
@@ -455,56 +347,89 @@ export function resolveBreadcrumbs(
               if (grandparent && grandparent.name === "CallExpression") {
                 const memberExpr = grandparent.getChild("MemberExpression");
                 if (memberExpr) {
-                  const propNode = memberExpr.getChild("PropertyName");
+                  const propNode =
+                    memberExpr.getChild("PropertyName") ||
+                    memberExpr.getChild("Identifier");
                   if (propNode) {
                     const methodName = code
                       .slice(propNode.from, propNode.to)
                       .trim();
-                    if (
-                      [
-                        "filter",
-                        "map",
-                        "reduce",
-                        "forEach",
-                        "then",
-                        "catch",
-                        "finally",
-                        "split",
-                        "join",
-                        "addEventListener",
-                      ].includes(methodName)
-                    ) {
+                    const validCallbacks = [
+                      "filter",
+                      "map",
+                      "reduce",
+                      "forEach",
+                      "then",
+                      "catch",
+                      "finally",
+                      "some",
+                      "every",
+                      "find",
+                      "findIndex",
+                      "flatMap",
+                    ];
+                    if (validCallbacks.includes(methodName)) {
                       isStandardCallback = true;
+
+                      const leftObj = memberExpr.firstChild;
+                      if (
+                        leftObj &&
+                        (leftObj.name === "VariableName" ||
+                          leftObj.name === "Identifier" ||
+                          leftObj.name === "this")
+                      ) {
+                        const callerName = code
+                          .slice(leftObj.from, leftObj.to)
+                          .trim();
+                        callbackLabel = `${callerName}.${methodName}() callback`;
+                      } else if (
+                        leftObj &&
+                        leftObj.name === "MemberExpression"
+                      ) {
+                        const cleanLeft = getCleanCallerName(leftObj, code);
+                        if (cleanLeft && !cleanLeft.includes("(")) {
+                          callbackLabel = `${cleanLeft}.${methodName}() callback`;
+                        } else {
+                          callbackLabel = `${methodName}() callback`;
+                        }
+                      } else {
+                        callbackLabel = `${methodName}() callback`;
+                      }
                     }
                   }
                 }
               }
             }
 
-            if (parentNode && parentNode.name === "JSXExpressionContainer") {
-              if (
-                parentNode.parent &&
-                parentNode.parent.name === "JSXAttribute"
-              ) {
-                isStandardCallback = true;
-              }
-            }
-
-            if (!isStandardCallback) {
-              const paramName = getParamName(currentNode, code);
+            if (isStandardCallback) {
               scopes.unshift({
-                id: `${typeOverride}-${currentNode.from}`,
-                name: paramName ? paramName : "anonymous",
+                id: `callback-${currentNode.from}`,
+                name: callbackLabel,
                 type: typeOverride,
                 from: currentNode.from,
                 to: currentNode.to,
                 line: 0,
               });
+            } else {
+              let p1 = currentNode.parent;
+              if (p1 && p1.name === "ParenthesizedExpression") p1 = p1.parent;
+              const isAnonymousIIFE = p1 && p1.name === "CallExpression";
+
+              if (!isAnonymousIIFE) {
+                scopes.unshift({
+                  id: `${typeOverride}-${currentNode.from}`,
+                  name: "&lt;cb function&gt;",
+                  type: "arrow",
+                  from: currentNode.from,
+                  to: currentNode.to,
+                  line: 0,
+                });
+              }
             }
           }
         }
       }
-      // Block Tier 4: Structural Scopes
+      // Block Tier 2: Structural Scopes (Classes, Methods, Variable Declarations)
       else if (mappedType) {
         let nodeName: string | null = null;
         if (
@@ -513,18 +438,35 @@ export function resolveBreadcrumbs(
           )
         ) {
           nodeName = getIdentifierName(currentNode, code);
-        } else if (nodeType === "VariableDeclarator") {
-          nodeName = getIdentifierName(currentNode, code);
-          if (nodeName) {
-            const childExpr =
-              currentNode.getChild("ObjectExpression") ||
-              currentNode.getChild("ArrowFunction") ||
-              currentNode.getChild("FunctionExpression") ||
-              currentNode.getChild("ArrayExpression");
-            if (childExpr) {
-              currentNode = currentNode.parent;
-              continue;
+
+          if (
+            nodeName &&
+            (nodeType === "MethodDeclaration" ||
+              nodeType === "Property" ||
+              nodeType === "PropertyDeclaration")
+          ) {
+            let child = currentNode.firstChild;
+            while (child) {
+              if (directNameTokens.includes(child.name)) {
+                const prefixText = code.slice(currentNode.from, child.from);
+                if (/\bget\b/.test(prefixText)) nodeName = `(get) ${nodeName}`;
+                else if (/\bset\b/.test(prefixText))
+                  nodeName = `(set) ${nodeName}`;
+                break;
+              }
+              child = child.nextSibling;
             }
+          }
+        } else if (
+          nodeType === "VariableDeclaration" ||
+          nodeType === "AssignmentExpression"
+        ) {
+          nodeName =
+            nodeType === "AssignmentExpression"
+              ? getCleanCallerName(currentNode.firstChild, code)
+              : getIdentifierName(currentNode, code);
+
+          if (nodeName) {
             scopes.unshift({
               id: `variable-${currentNode.from}`,
               name: nodeName,
@@ -540,6 +482,18 @@ export function resolveBreadcrumbs(
         ) {
           nodeName = getIdentifierName(currentNode, code);
           if (nodeName) {
+            let child = currentNode.firstChild;
+            while (child) {
+              if (directNameTokens.includes(child.name)) {
+                const prefixText = code.slice(currentNode.from, child.from);
+                if (/\bget\b/.test(prefixText)) nodeName = `(get) ${nodeName}`;
+                else if (/\bset\b/.test(prefixText))
+                  nodeName = `(set) ${nodeName}`;
+                break;
+              }
+              child = child.nextSibling;
+            }
+
             let finalType = currentNode.getChild("Block")
               ? "method"
               : "property";
@@ -552,55 +506,21 @@ export function resolveBreadcrumbs(
               line: 0,
             });
           }
-        } else if (mappedType === "static-block") {
-          nodeName = "static {}";
         } else if (mappedType === "jsx") {
           nodeName = getJSXTagName(currentNode, code, cursorPos);
-        } else if (
-          ["conditional", "looping", "try-catch-finally"].includes(
-            mappedType,
-          ) &&
-          nodeType !== "TryStatement"
-        ) {
-          if (nodeType === "IfStatement") {
-            const parentElse = currentNode.getChild("else");
-            const childIf = currentNode.getChild("IfStatement");
-            if (
-              parentElse &&
-              childIf &&
-              childIf.from > parentElse.from &&
-              cursorPos >= parentElse.from
-            ) {
-              currentNode = currentNode.parent;
-              continue;
-            }
-
-            const elseKeywordNode = currentNode.getChild("else");
-            if (elseKeywordNode && cursorPos >= elseKeywordNode.from) {
-              nodeName = "else";
-            } else {
-              const parentNode = currentNode.parent;
-              const isElseIfStructure =
-                parentNode &&
-                parentNode.name === "IfStatement" &&
-                currentNode.from >
-                  (parentNode.getChild("else")?.from ?? Infinity);
-              nodeName = isElseIfStructure ? "else-if" : "if";
-            }
-          } else {
-            nodeName = nodeType
-              .replace("Statement", "")
-              .replace("Clause", "")
-              .toLowerCase();
-            if (nodeName === "catchclause") nodeName = "catch";
+          if (nodeName && !/^[A-Z]/.test(nodeName)) {
+            nodeName = null;
           }
         }
 
         if (
           nodeName &&
-          !["Property", "PropertyDeclaration", "VariableDeclarator"].includes(
-            nodeType,
-          )
+          ![
+            "Property",
+            "PropertyDeclaration",
+            "VariableDeclaration",
+            "AssignmentExpression",
+          ].includes(nodeType)
         ) {
           scopes.unshift({
             id: `${mappedType}-${currentNode.from}`,
@@ -615,17 +535,15 @@ export function resolveBreadcrumbs(
       currentNode = currentNode.parent;
     }
 
-    // --- Enterprise Single-Pass Stream-Scanning Line Counter ($O(N)$ Optimization) ---
+    // Line Counter Block
     if (scopes.length > 0) {
       let currentLine = 1;
       let streamIdx = 0;
       const totalLen = code.length;
 
-      // scopes array သည် unshift ဖြင့်ဆောက်ထား၍ Outer-most မှ Inner-most သို့ 'from' တန်ဖိုးအလိုက် အစဉ်လိုက် (Sorted) ဖြစ်နေပြီးသားဖြစ်သည်
       for (let i = 0; i < scopes.length; i++) {
         const targetOffset = scopes[i].from;
 
-        // တစ်ကြိမ်တည်းဖြင့် ရှေ့သို့သာ ဆက်တိုက် Scan ဖတ်သွားသည့် Pointer စနစ်
         while (streamIdx < targetOffset && streamIdx < totalLen) {
           if (code[streamIdx] === "\n") {
             currentLine++;

@@ -1,4 +1,10 @@
 // Breadcrumbs-advanced-test.js
+const fruits = ["Apple", "Banana" /* cursor here: Breadcrumbs > fruits */]; // = Same With VSCode
+
+const person = {
+  name: "John Doe",
+  age: 30, // cursor here: Breadcrumbs > person = Same With VSCode
+};
 
 // ==========================================
 // 01 Advanced Class Syntax (Static Blocks & Private Methods)
@@ -9,33 +15,33 @@ class DatabaseManager {
 
   // Static Initializer Block (ES2022)
   static {
-    // cursor here: DatabaseManager > static {}
+    // cursor here: Breadcrumbs > DatabaseManager = Same With VSCode
     try {
-      // cursor here: DatabaseManager > static {} > try
+      // cursor here: Breadcrumbs > DatabaseManager = Same With VSCode
       this.activeConnections = 1;
     } catch (err) {
-      // cursor here: DatabaseManager > static {} > catch
+      // cursor here: Breadcrumbs > DatabaseManager = Same With VSCode
       console.error("Static init failed", err);
     }
   }
 
   constructor(uri) {
-    // cursor here: DatabaseManager > constructor
+    // cursor here: Breadcrumbs > DatabaseManager > constructor = Same With VSCode
     this.#connectionString = uri;
   }
 
   // Private Method
   #validateUri() {
-    // cursor here: DatabaseManager > #validateUri
+    // cursor here: Breadcrumbs > DatabaseManager > #validateUri = Same With VSCode
     return this.#connectionString.startsWith("mongodb://");
   }
 
   connect() {
-    // cursor here: DatabaseManager > connect
+    // cursor here: DatabaseManager > connect = Same With VSCode
     const initialize = () => {
-      // cursor here: DatabaseManager > connect > initialize
+      // cursor here: DatabaseManager > connect > initialize  = Same With VSCode
       if (this.#validateUri()) {
-        // cursor here: DatabaseManager > connect > initialize > if
+        // cursor here: DatabaseManager > connect > initialize = Same With VSCode
         console.log("Connected securely.");
       }
     };
@@ -54,15 +60,19 @@ const transactions = [
 
 const cryptoTotal = transactions
   .filter((tx) => {
-    // cursor here: transactions.filter
+    // cursor here: Breadcrumbs > filter() callback > transactions = Not Same
+    // vscode result: Breadcrumbs > cryptoTotal > transactions.filter() callback
     return tx.tags.includes("crypto");
   })
   .map((tx) => {
-    // cursor here: transactions.filter.map
+    // cursor here: Breadcrumbs > map() callback > transactions = Not Same
+    // vscode result: Breadcrumbs > cryptoTotal > map() callback
+
     return tx.amount;
   })
   .reduce((total, amount) => {
-    // cursor here: transactions.filter.map.reduce
+    // cursor here: Breadcrumbs > reduce() callback > transactions = Not Same
+    // vscode result: Breadcrumbs > cryptoTotal > reduce() callback
     return total + amount;
   }, 0);
 
@@ -70,14 +80,17 @@ const cryptoTotal = transactions
 // 03 Nested Closures & Factory HOFs (Currying Extreme)
 // ==========================================
 const configureEngine = (type) => {
-  // cursor here: configureEngine
+  // cursor here: Breadcrumbs > configureEngine = Same With VSCode
   return (version) => {
-    // cursor here: configureEngine > version
+    // cursor here: Breadcrumbs > configureEngine > icon only = Not Same
+    // vscode result: Breadcrumbs > configureEngine > <function>
     return function buildDriver(driverName) {
-      // cursor here: configureEngine > version > buildDriver
+      // cursor here: Breadcrumbs > configureEngine > icon only > buildDriver = Not Same
+      // vscode result: Breadcrumbs > configureEngine > <function> > buildDriver
       return {
         start: function () {
-          // cursor here: configureEngine > version > buildDriver > start
+          // cursor here: Breadcrumbs > configureEngine > icon only > buildDriver > start = Not Same
+          // vscode result: Breadcrumbs > configureEngine > <function> > buildDriver > start
           console.log(`Running ${type} v${version} via ${driverName}`);
         },
       };
@@ -91,24 +104,24 @@ const configureEngine = (type) => {
 const apiService = {
   endpoint: "https://api.v1",
   headers: {
-    // cursor here: apiService > headers
-    get auth() {
-      // cursor here: apiService > headers > auth
+    // cursor here: Breadcrumbs > apiService > headers = Same With VSCode
+    auth() {
+      // cursor here: Breadcrumbs > apiService > headers > (get) auth = Same With VSCode
       return "Bearer token_xyz";
     },
   },
   utils: {
-    // cursor here: apiService > utils
+    // cursor here: Breadcrumbs > apiService > utils = Same With VSCode
     request: async function send(path) {
-      // cursor here: apiService > utils > send
+      // cursor here: Breadcrumbs > apiService > utils > request = Same With VSCode
       const execute = async () => {
-        // cursor here: apiService > utils > send > execute
+        // cursor here: Breadcrumbs > apiService > utils > request > execute = Same With VSCode
         return fetch(`${this.endpoint}/${path}`);
       };
       return execute();
     },
     formatData: (raw) => {
-      // cursor here: apiService > utils > formatData
+      // cursor here: Breadcrumbs > apiService > utils > formatData = Same With VSCode
       return raw.json();
     },
   },
@@ -118,37 +131,37 @@ const apiService = {
 // 05 The Ultimate Control Flow Stress Test
 // ==========================================
 function heavyValidation(user) {
-  // cursor here: heavyValidation
+  // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
   if (user.isActive) {
-    // cursor here: heavyValidation > if
+    // cursor here: heavyValidation
     for (let role of user.roles) {
-      // cursor here: heavyValidation > if > for
+      // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
       if (role === "superadmin") {
-        // cursor here: heavyValidation > if > for > if
+        // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
         while (user.attempts > 0) {
-          // cursor here: heavyValidation > if > for > if > while
+          // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
           try {
-            // cursor here: heavyValidation > if > for > if > while > try
+            // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
             if (user.verifyMFACode()) {
-              // cursor here: heavyValidation > if > for > if > while > try > if
+              // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
               break;
             }
           } catch (mfaError) {
-            // cursor here: heavyValidation > if > for > if > while > try > catch
+            // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
             user.attempts--;
           } finally {
-            // cursor here: heavyValidation > if > for > if > while > try > finally
+            // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
             console.log("Attempt evaluation complete");
           }
         }
       } else {
-        // cursor here: heavyValidation > if > for > else
+        // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
       }
     }
   } else if (user.isSuspended) {
-    // cursor here: heavyValidation > else-if
+    // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
   } else {
-    // cursor here: heavyValidation > else
+    // cursor here: Breadcrumbs > heavyValidation = Same With VSCode
   }
 }
 
@@ -156,11 +169,12 @@ function heavyValidation(user) {
 // 06 Immediately Invoked Function Expressions (IIFEs)
 // ==========================================
 (function iifeModule() {
-  // cursor here: iifeModule
+  // cursor here: Breadcrumbs > iifeModule = Same With VSCode
   const privateState = "secret";
 
   (() => {
-    // cursor here: iifeModule > arrow
+    // cursor here: Breadcrumbs > iifeModule = Same With VSCode
+    // vscode result: Breadcrumbs > iifeModule
     console.log("Nested Anonymous IIFE executing: ", privateState);
   })();
 })();
@@ -169,29 +183,32 @@ function heavyValidation(user) {
 // 07 Asynchronous Nightmare (Dynamic Imports & Promise Interceptors)
 // ==========================================
 async function setupPluginSystem() {
-  // cursor here: setupPluginSystem
+  // cursor here: Breadcrumbs > setupPluginSystem = Same With VSCode
   try {
-    // cursor here: setupPluginSystem > try
+    // cursor here: Breadcrumbs > setupPluginSystem = Same With VSCode
     const plugin = await import("./analytics-plugin.js");
 
     plugin
       .initialize()
       .then((status) => {
-        // cursor here: plugin.initialize().then
+        // cursor here: Breadcrumbs > setupPluginSystem > then() callback = Same With VSCode
+        // vscode result: Breadcrumbs > setupPluginSystem > then() callback
         if (status === "SUCCESS") {
           return plugin.fetchMeta();
         }
       })
       .then((meta) => {
-        // cursor here: plugin.initialize().then.then
+        // cursor here: Breadcrumbs > setupPluginSystem > then() callback = Same With VSCode
+        // vscode result: Breadcrumbs > setupPluginSystem > then() callback
         console.log("Metadata loaded: ", meta);
       })
       .catch((err) => {
-        // cursor here: plugin.initialize().then.then.catch
+        // cursor here: Breadcrumbs > setupPluginSystem > catch() callback = Same With VSCode
+        // vscode result: Breadcrumbs > setupPluginSystem > catch() callback
         console.error("Plugin failed chain: ", err);
       });
   } catch (err) {
-    // cursor here: setupPluginSystem > catch
+    // cursor here: Breadcrumbs > setupPluginSystem = Same With VSCode
     console.error("Dynamic import failed", err);
   }
 }
@@ -200,7 +217,7 @@ async function setupPluginSystem() {
 // 08 Deeply Nested JSX Hierarchy (TSX/JSX dialect test)
 // ==========================================
 function DashboardComponent() {
-  // cursor here: DashboardComponent
+  // cursor here: Breadcrumbs > DashboardComponent = Same With VSCode
   return (
     <div className="dashboard">
       <header className="header">
@@ -209,10 +226,11 @@ function DashboardComponent() {
             <ul className="list-wrapper">
               {/* Lezer Parser JSX Node Target */}
               <li className="active-item">
-                {/* cursor here: DashboardComponent > div > header > SidebarLayout > nav > ul > li */}
+                {/* cursor here: Breadcrumbs > DashboardComponent > SidebarLayout = Same With VSCode */}
                 <span
                   onClick={(e) => {
-                    // cursor here: DashboardComponent > div > header > SidebarLayout > nav > ul > li > span.onClick
+                    // cursor here: Breadcrumbs > DashboardComponent > SidebarLayout = Same With VSCode
+                    // vscode result: Breadcrumbs > DashboardComponent > SidebarLayout
                     console.log("Clicked inside deep JSX structure", e);
                   }}
                 >
