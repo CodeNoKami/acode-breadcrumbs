@@ -1,5 +1,6 @@
 import { PLUGIN_ID } from "./configs/constant";
 import { EditorView } from "@codemirror/view";
+import { syntaxTree, ensureSyntaxTree } from "@codemirror/language"; // 🌟 Added ensureSyntaxTree for safety
 import { parser as jsParser } from "@lezer/javascript";
 import { highlightCode, classHighlighter } from "@lezer/highlight";
 import { resolveBreadcrumbs, ScopeBlock } from "./utils/lezerParser";
@@ -25,6 +26,7 @@ export class BreadcrumbsPlugin {
 
   // --- Optimization State Caches ---
   private lastDocString: string = "";
+  private lastPos: number = -1; // 🌟 Track last position for aggressive early return
   private lastScopesFingerprint: string = "";
   private activePopupCleanup: (() => void) | null = null;
   private blockClickBypass: boolean = false;
@@ -32,7 +34,41 @@ export class BreadcrumbsPlugin {
   // 🌟 Setting တွင် အရောင်ပြောင်းလိုက်ပါက UI ချက်ချင်း update ဖြစ်စေရန် cache ရှင်းပေးမည့် method
   public clearCache(): void {
     this.lastDocString = "";
+    this.lastPos = -1;
     this.lastScopesFingerprint = "";
+  }
+
+  // Helper to safely extract native tree without Bundle Mismatch error
+  private getNativeTree(state: any): any {
+    if (!state) return null;
+    try {
+      // Reflection-based extraction to bypass the Lezer Instance Hazard
+      // CodeMirror stores values in an internal array within the state object.
+      // Although minified, the internal array object keys can be iterated.
+      for (const key of Object.keys(state)) {
+        const val = state[key];
+        if (Array.isArray(val)) {
+          for (const item of val) {
+            // Looking for the LanguageState object which has the .tree property
+            if (item && item.tree && typeof item.tree === "object") {
+              const t = item.tree;
+              // Validate it's a real Lezer Tree by checking non-minified props
+              if (
+                t.type &&
+                Array.isArray(t.children) &&
+                Array.isArray(t.positions) &&
+                typeof t.length === "number"
+              ) {
+                return t;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to extract native tree:", e);
+    }
+    return null;
   }
 
   // 🌟 Node မျိုးအစားအလိုက် တောင်းဆိုထားသော Custom Color များကို ခွဲခြားသတ်မှတ်ပေးမည့် Helper
@@ -69,6 +105,12 @@ export class BreadcrumbsPlugin {
 
   public async init(baseUrl: string, $page: any, cache: any): Promise<void> {
     const _ = { baseUrl, $page, cache };
+
+    // Fix B: Clear any pre-existing initialization intervals to prevent multi-init leaks
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
 
     // Initialize default plugin settings safely
     const settings: any = acode.require("settings");
@@ -205,6 +247,7 @@ export class BreadcrumbsPlugin {
       }
 
       this.lastDocString = "";
+      this.lastPos = -1;
       this.lastScopesFingerprint = "";
 
       this.currentEditor = editor;
@@ -453,7 +496,6 @@ export class BreadcrumbsPlugin {
     const pluginSettings = settings.value[PLUGIN_ID] || {};
     const showIcons = pluginSettings.showIcons !== false;
     const colorStr = this.getCustomColor(block.type);
-    // 🌟 ပြင်ဆင်လိုက်သည်- Preview Popup ရှိ Icon ဆီသို့ပါ Custom Color လှမ်းထည့်ပေးလိုက်သည်
     const iconStr = showIcons ? getIconByType(block.type, colorStr) : "";
 
     headerLabel.innerHTML = `
@@ -592,6 +634,12 @@ export class BreadcrumbsPlugin {
       document.removeEventListener("touchstart", handleOutsideClick);
       document.removeEventListener("mousedown", handleOutsideClick);
       resizeHandle.removeEventListener("touchstart", onTouchStartResize);
+
+      // 🌟 Fix A (Critical Cleanup): Explicitly detach global touchmove/touchend when dismissing
+      // Prevents leaked listeners on 'document' if popup is closed during an active resize gesture
+      document.removeEventListener("touchmove", onTouchMoveResize);
+      document.removeEventListener("touchend", onTouchEndResize);
+
       this.activePopupCleanup = null;
     };
 
@@ -670,7 +718,40 @@ export class BreadcrumbsPlugin {
     const pos = state.selection.main.head;
     const fullCode = state.doc.toString();
 
-    const validScopes = resolveBreadcrumbs(fullCode, pos);
+    // 🌟 Fix 1 (Critical Performance): High-Efficiency Early Return
+    // Instantly aborts heavy processing if neither document content nor cursor offset shifted,
+    // avoiding unnecessary `ensureSyntaxTree` or manual parsing on every debounce tick.
+    if (fullCode === this.lastDocString && pos === this.lastPos) {
+      return;
+    }
+
+    // 🌟 Fix 1 (Architecture): Reflection-based native Tree extraction (or manual fallback)
+    const nativeTree = this.getNativeTree(state);
+    let finalTree = nativeTree;
+
+    // Safety net: Use ensureSyntaxTree to force a parse if native tree is empty (length: 0)
+    if (!finalTree || finalTree.length === 0) {
+      // Dialect logic kept here to construct temporary config if fallback is needed
+      let dialect = "";
+      if (filename.endsWith(".tsx")) dialect = "ts jsx";
+      else if (filename.endsWith(".ts")) dialect = "ts";
+      else if (filename.endsWith(".jsx")) dialect = "jsx";
+
+      // 🌟 Safety fallback: If reflection failed, try forcing a parse using ensureSyntaxTree
+      // This bridges the GAP safely without the Instance Hazard on standard CM6 syntax extensions.
+      const fallbackTree = ensureSyntaxTree(state, state.doc.length, 3000);
+
+      if (fallbackTree) {
+        finalTree = fallbackTree;
+      } else {
+        // Ultimate fallback: Manual parsing in plugin's instance (heavier)
+        const configuredParser = jsParser.configure({ dialect });
+        finalTree = configuredParser.parse(fullCode);
+      }
+    }
+
+    // Call optimized lezerParser signature
+    const validScopes = resolveBreadcrumbs(finalTree, fullCode, pos);
 
     let currentFingerprint = "";
     for (let i = 0; i < validScopes.length; i++) {
@@ -681,9 +762,11 @@ export class BreadcrumbsPlugin {
       fullCode === this.lastDocString &&
       currentFingerprint === this.lastScopesFingerprint
     ) {
+      this.lastPos = pos;
       return;
     }
     this.lastDocString = fullCode;
+    this.lastPos = pos;
     this.lastScopesFingerprint = currentFingerprint;
 
     while (pathEl.firstChild) {
@@ -714,7 +797,6 @@ export class BreadcrumbsPlugin {
           "display: inline-flex; align-items: center; gap: 2px; cursor: pointer; user-select: none; -webkit-user-select: none;";
 
         const customColor = this.getCustomColor(block.type);
-        // 🌟 ပြင်ဆင်လိုက်သည်- Main Breadcrumbs Bar ပေါ်ရှိ Icon ဆီသို့ပါ Custom Color လှမ်းထည့်ပေးလိုက်သည်
         const iconHtml = showIcons
           ? getIconByType(block.type, customColor)
           : "";
@@ -818,11 +900,12 @@ export class BreadcrumbsPlugin {
     this.prefixIconContainer = null;
     this.currentEditor = null;
     this.lastDocString = "";
+    this.lastPos = -1;
     this.lastScopesFingerprint = "";
   }
 }
 
-// 🌟 Full 12 Node Types Prompt UI Mapping Сonfiguration
+// Full 12 Node Types Prompt UI Mapping Сonfiguration
 const breadcrumbsSettings = {
   get list() {
     const settings = acode.require("settings");

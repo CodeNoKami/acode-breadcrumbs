@@ -1,7 +1,4 @@
-import { parser as jsParser } from "@lezer/javascript";
-import { SyntaxNode } from "@lezer/common";
-
-const parser = jsParser.configure({ dialect: "ts jsx" });
+import { SyntaxNode, Tree } from "@lezer/common";
 
 export interface ScopeBlock {
   id: string;
@@ -202,6 +199,20 @@ function getLookbackName(
   nodeFrom: number,
   code: string,
 ): { name: string; type: string } | null {
+  // Optimization: Lightweight character guard checking backwards from node entry point
+  // Aborts expensive string slicing and regex engines if no assignment operator or key indicator exists
+  let idx = nodeFrom - 1;
+  let hasValidTrigger = false;
+  while (idx >= 0 && idx >= nodeFrom - 120) {
+    const char = code[idx];
+    if (char === "=" || char === ":") {
+      hasValidTrigger = true;
+      break;
+    }
+    idx--;
+  }
+  if (!hasValidTrigger) return null;
+
   const lookbackStart = Math.max(0, nodeFrom - 120);
   const preamble = code.slice(lookbackStart, nodeFrom);
   const varMatch = preamble.match(
@@ -215,13 +226,13 @@ function getLookbackName(
 }
 
 export function resolveBreadcrumbs(
+  tree: Tree,
   code: string,
   cursorPos: number,
 ): ScopeBlock[] {
   const scopes: ScopeBlock[] = [];
 
   try {
-    const tree = parser.parse(code);
     let currentNode: SyntaxNode | null = tree.resolveInner(cursorPos, -1);
     const processedNodes = new Set<string>();
 
@@ -535,22 +546,35 @@ export function resolveBreadcrumbs(
       currentNode = currentNode.parent;
     }
 
-    // Line Counter Block
+    // Optimization: High-Performance O(N) single pass tracking map for line-start indices
+    // and instant O(log L) Binary Search resolving line indexes across active scope structures
     if (scopes.length > 0) {
-      let currentLine = 1;
-      let streamIdx = 0;
-      const totalLen = code.length;
+      const lineStarts: number[] = [0];
+      const codeLen = code.length;
+      for (let i = 0; i < codeLen; i++) {
+        if (code.charCodeAt(i) === 10) {
+          // Look for '\n'
+          lineStarts.push(i + 1);
+        }
+      }
 
       for (let i = 0; i < scopes.length; i++) {
         const targetOffset = scopes[i].from;
+        let low = 0;
+        let high = lineStarts.length - 1;
 
-        while (streamIdx < targetOffset && streamIdx < totalLen) {
-          if (code[streamIdx] === "\n") {
-            currentLine++;
+        while (low <= high) {
+          const mid = (low + high) >> 1;
+          if (lineStarts[mid] === targetOffset) {
+            low = mid + 1;
+            break;
+          } else if (lineStarts[mid] < targetOffset) {
+            low = mid + 1;
+          } else {
+            high = mid - 1;
           }
-          streamIdx++;
         }
-        scopes[i].line = currentLine;
+        scopes[i].line = low;
       }
     }
   } catch (err) {
