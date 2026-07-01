@@ -3,7 +3,7 @@ import { SyntaxNode, Tree } from "@lezer/common";
 export interface ScopeBlock {
   id: string;
   name: string;
-  type: string; // Will hold: "conditional" | "looping" | "tcf" | "event" | "function" | etc.
+  type: string; // "conditional" | "looping" | "tcf" | "event" | "function" | "class" | etc.
   from: number;
   to: number;
   line: number;
@@ -39,12 +39,12 @@ export function getScopeType(nodeType: string): string | null {
     case "AssignmentExpression":
       return "variable";
 
-    //  Conditionals (Type Separation for Custom SVG/Color)
+    // Conditionals
     case "IfStatement":
     case "SwitchStatement":
       return "conditional";
 
-    //  Loopings (Type Separation for Custom SVG/Color)
+    // Loopings
     case "ForStatement":
     case "ForInStatement":
     case "ForOfStatement":
@@ -52,7 +52,7 @@ export function getScopeType(nodeType: string): string | null {
     case "DoStatement":
       return "looping";
 
-    // Try-Catch-Finally (Type Separation for Custom SVG/Color)
+    // Try-Catch-Finally (TCF)
     case "TryStatement":
     case "CatchClause":
     case "FinallyClause":
@@ -249,7 +249,7 @@ export function resolveBreadcrumbs(
         continue;
       }
 
-      //  Block Tier 0.5: Highly-Optimized Structural Scopes (conditional, looping, tcf)
+      // Block Tier 0.5: Control Flow Structures (conditional, looping, tcf)
       if (
         mappedType &&
         ["conditional", "looping", "tcf"].includes(mappedType)
@@ -257,29 +257,31 @@ export function resolveBreadcrumbs(
         let label = "";
 
         if (nodeType === "IfStatement") {
-          // Detect 'else if' branch cleanly
-          if (currentNode.parent?.name === "IfStatement") {
-            label = "else if";
-            // Anti-redundancy guard: Mark parent chain as parsed so it doesn't duplicate 'if' blocks
-            processedNodes.add(`${currentNode.parent.from}-IfStatement`);
-          } else {
-            let elseToken = currentNode.firstChild;
-            while (elseToken) {
-              if (elseToken.name === "else") break;
-              elseToken = elseToken.nextSibling;
-            }
+          let elseToken = currentNode.firstChild;
+          while (elseToken) {
+            if (elseToken.name === "else") break;
+            elseToken = elseToken.nextSibling;
+          }
 
-            if (elseToken && cursorPos >= elseToken.to) {
-              let alternateNode = elseToken.nextSibling;
-              while (alternateNode && alternateNode.name === "Comment") {
-                alternateNode = alternateNode.nextSibling;
-              }
-              // If the alternate branch is not another IfStatement, it's a pure 'else' block
-              if (alternateNode && alternateNode.name !== "IfStatement") {
-                label = "else";
-              } else {
-                label = "if";
-              }
+          if (elseToken && cursorPos >= elseToken.to) {
+            let alternateNode = elseToken.nextSibling;
+            while (alternateNode && alternateNode.name === "Comment") {
+              alternateNode = alternateNode.nextSibling;
+            }
+            if (alternateNode && alternateNode.name === "IfStatement") {
+              // It's an "else if" block -> let the inner child node handle the naming
+              currentNode = currentNode.parent;
+              continue;
+            } else {
+              label = "else";
+            }
+          } else {
+            if (
+              currentNode.parent &&
+              currentNode.parent.name === "IfStatement"
+            ) {
+              label = "else if";
+              processedNodes.add(`${currentNode.parent.from}-IfStatement`);
             } else {
               label = "if";
             }
@@ -289,16 +291,37 @@ export function resolveBreadcrumbs(
         else if (nodeType === "ForInStatement") label = "for-in";
         else if (nodeType === "ForOfStatement") label = "for-of";
         else if (nodeType === "WhileStatement") label = "while";
-        else if (nodeType === "DoStatement") label = "do";
-        else if (nodeType === "TryStatement") label = "try";
-        else if (nodeType === "CatchClause") label = "catch";
+        else if (nodeType === "DoStatement") label = "do-while";
+        else if (nodeType === "TryStatement") {
+          label = "try";
+          // If the cursor is currently inside a catch or finally block companion branch,
+          // do not append "try" as an artificial parent container layer.
+          let checkChild = currentNode.firstChild;
+          let isCursorInTcfSibling = false;
+          while (checkChild) {
+            if (
+              (checkChild.name === "CatchClause" ||
+                checkChild.name === "FinallyClause") &&
+              cursorPos >= checkChild.from &&
+              cursorPos <= checkChild.to
+            ) {
+              isCursorInTcfSibling = true;
+              break;
+            }
+            checkChild = checkChild.nextSibling;
+          }
+          if (isCursorInTcfSibling) {
+            currentNode = currentNode.parent;
+            continue;
+          }
+        } else if (nodeType === "CatchClause") label = "catch";
         else if (nodeType === "FinallyClause") label = "finally";
 
         if (label) {
           scopes.unshift({
             id: `${mappedType}-${currentNode.from}`,
             name: label,
-            type: mappedType, // Directly maps to "conditional", "looping", or "tcf"
+            type: mappedType,
             from: currentNode.from,
             to: currentNode.to,
             line: 0,
@@ -308,7 +331,7 @@ export function resolveBreadcrumbs(
           continue;
         }
       }
-      // Block Tier 0.7: Event Listeners (addEventListener, removeEventListener)
+      // Block Tier 0.7: Fluid Fluent Event Listeners
       else if (nodeType === "CallExpression") {
         const calleeName = getCleanCallerName(currentNode.firstChild, code);
         if (
@@ -318,6 +341,10 @@ export function resolveBreadcrumbs(
         ) {
           const isAdd = calleeName.endsWith("addEventListener");
           const methodName = isAdd ? "addEventListener" : "removeEventListener";
+
+          const prefixIndex = calleeName.lastIndexOf(methodName);
+          const callerPrefix =
+            prefixIndex > 0 ? calleeName.slice(0, prefixIndex) : "";
 
           let eventType = "";
           const argList = currentNode.getChild("ArgList");
@@ -336,8 +363,8 @@ export function resolveBreadcrumbs(
           }
 
           const displayName = eventType
-            ? `${methodName}("${eventType}")`
-            : methodName;
+            ? `${callerPrefix}${methodName}("${eventType}")`
+            : calleeName;
 
           scopes.unshift({
             id: `event-${currentNode.from}`,
@@ -350,7 +377,7 @@ export function resolveBreadcrumbs(
           processedNodes.add(nodeKey);
         }
       }
-      // Block Tier 1: Anonymous Data Sets & Callbacks (Functions, Object Literals, Array Methods)
+      // Block Tier 1: Anonymous Data Sets & Callbacks
       else if (
         [
           "ObjectExpression",
@@ -454,7 +481,7 @@ export function resolveBreadcrumbs(
             nodeType === "FunctionExpression"
           ) {
             let isStandardCallback = false;
-            let callbackLabel = "&lt;function&gt;";
+            let callbackLabel = "<function>";
             let parentNode = currentNode.parent;
 
             if (parentNode && parentNode.name === "ArgList") {
@@ -544,7 +571,7 @@ export function resolveBreadcrumbs(
           }
         }
       }
-      // Block Tier 2: Structural Scopes (Classes, Methods, Variable Declarations)
+      // Block Tier 2: Structural Object-Oriented Signatures
       else if (mappedType) {
         let nodeName: string | null = null;
         if (
@@ -650,7 +677,7 @@ export function resolveBreadcrumbs(
       currentNode = currentNode.parent;
     }
 
-    // High-Performance Binary Search Line Resolver Block
+    // Line Number Index Resolver Block
     if (scopes.length > 0) {
       const lineStarts: number[] = [0];
       const codeLen = code.length;

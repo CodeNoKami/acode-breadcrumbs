@@ -227,3 +227,37 @@ function DashboardComponent() {
     </div>
   );
 }
+
+if ("hello" == "hello") {
+  // cursor here: test.js > if
+  // should be: test.js > if
+  if ("a" == "a") {
+    // cursor here: test.js > if > if
+    // should be: test.js > if > if
+  } else if (2 == 2) {
+    // cursor here: test.js > if > else if
+    // cursor here: test.js > if > else if
+  } else {
+    // cursor here: test.js > if > else if
+    // cursor here: test.js > if > else
+  }
+} else {
+  // cursor here: test.js > else
+  // should be: test.js > else
+}
+
+try {
+  // cursor here: test.js > try
+  // should be: test.js > try
+} catch (error) {
+  // cursor here: test.js > try > catch
+  // should be: test.js > catch
+} finally {
+  // cursor here: test.js > try > finally
+  // should be: test.js > finally
+}
+
+testButton.addEventListener("click", (e) => {
+  // cursor here: test.js > addEventListener("click") > <cb function>
+  // should be - test.js > testButton.addEventListener("click") > <cb function>
+});
