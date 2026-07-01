@@ -261,3 +261,5 @@ testButton.addEventListener("click", (e) => {
   // cursor here: test.js > addEventListener("click") > <cb function>
   // should be - test.js > testButton.addEventListener("click") > <cb function>
 });
+
+for (let index = 0; index < bound; index++) {}
