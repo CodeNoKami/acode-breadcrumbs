@@ -1,3 +1,21 @@
+## [2.5.0] - 2026-07-01
+
+### Added
+
+- **Core UI & Behavioral Toggles:** Integrated explicit user controls within the settings registry to customize core interactions:
+  - showIcons: Globally toggles structural layout icons on/off across both the breadcrumbs bar and preview popups.
+  - disablePreviewPopup: Allows users to completely disable the long-press preview card behavior for a lighter footprint.
+- **Performance & Interaction Calibration:** Added granular drop-down selection options to fine-tune the plugin's orchestration engine:
+  - previewDelay: Configurable long-press holding thresholds (300ms, 480ms, 800ms) to control popup responsiveness.
+  - pollingDebounceTimeout: Tailorable AST parsing debounce windows (ranging from 100ms for aggressive updating up to 400ms for battery-saving/low-end devices).
+- **Full 12-Node Color Configuration Suite:** Expanded the plugin preferences panel with dedicated hex-color text inputs for all primary architectural tokens (Class, Interface, Type, Enum, Method, Function, Arrow, Property, Object, Array, Variable, and JSX).
+- **Automated Hex Formatting Sanitizer:** Enhanced the configuration registry save callback to automatically format input strings, appending the missing # prefix to raw hexadecimal inputs to ensure bulletproof CSS evaluation.
+
+### Fixed
+
+- **Desynced Vector vs. Typography Color Palettes:** Refactored the internal getIconByType engine signature to cleanly inherit user-defined theme overrides. This resolves the synchronization issue where changing a node type's text color left its accompanying SVG icon hardcoded to the default purple (#D694FF) tone.
+- **Stale Cache Setting Repaint Lock:** Introduced a dedicated clearCache() pipeline to seamlessly flush structural layout fingerprint caches upon changing any setting, forcing an immediate and responsive UI repaint without requiring a workspace or file reload.
+
 ## [2.4.0] - 2026-06-29
 
 ### Changed

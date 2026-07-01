@@ -3,7 +3,11 @@ import { EditorView } from "@codemirror/view";
 import { parser as jsParser } from "@lezer/javascript";
 import { highlightCode, classHighlighter } from "@lezer/highlight";
 import { resolveBreadcrumbs, ScopeBlock } from "./utils/lezerParser";
-import { getIconByType, getColorByType } from "./utils/patterns";
+import {
+  getIconByType,
+  getColorByType,
+  getFileIconByType,
+} from "./utils/patterns";
 
 declare var editorManager: any;
 declare var acode: any;
@@ -11,7 +15,8 @@ declare var acode: any;
 export class BreadcrumbsPlugin {
   private container: HTMLDivElement | null = null;
   private pathContainer: HTMLSpanElement | null = null;
-  private prefixTextEl: HTMLSpanElement | null = null; // 🌟 Added: Target reference for dynamic filename syncing
+  private prefixTextEl: HTMLSpanElement | null = null;
+  private prefixIconContainer: HTMLSpanElement | null = null;
   private intervalId: any = null;
   private debounceTimeout: any = null;
   private pressTimer: any = null;
@@ -24,8 +29,90 @@ export class BreadcrumbsPlugin {
   private activePopupCleanup: (() => void) | null = null;
   private blockClickBypass: boolean = false;
 
+  // 🌟 Setting တွင် အရောင်ပြောင်းလိုက်ပါက UI ချက်ချင်း update ဖြစ်စေရန် cache ရှင်းပေးမည့် method
+  public clearCache(): void {
+    this.lastDocString = "";
+    this.lastScopesFingerprint = "";
+  }
+
+  // 🌟 Node မျိုးအစားအလိုက် တောင်းဆိုထားသော Custom Color များကို ခွဲခြားသတ်မှတ်ပေးမည့် Helper
+  private getCustomColor(type: string): string {
+    const settings: any = acode.require("settings");
+    const state = settings.value[PLUGIN_ID] || {};
+    const lowerType = type ? type.toLowerCase() : "";
+
+    if (lowerType.includes("method"))
+      return state.colorMethod || getColorByType(type);
+    if (lowerType.includes("arrow"))
+      return state.colorArrow || getColorByType(type);
+    if (lowerType.includes("function"))
+      return state.colorFunction || getColorByType(type);
+    if (lowerType.includes("class"))
+      return state.colorClass || getColorByType(type);
+    if (lowerType.includes("interface"))
+      return state.colorInterface || getColorByType(type);
+    if (lowerType.includes("type"))
+      return state.colorType || getColorByType(type);
+    if (lowerType.includes("enum"))
+      return state.colorEnum || getColorByType(type);
+    if (lowerType.includes("property"))
+      return state.colorProperty || getColorByType(type);
+    if (lowerType.includes("object"))
+      return state.colorObject || getColorByType(type);
+    if (lowerType.includes("array"))
+      return state.colorArray || getColorByType(type);
+    if (lowerType.includes("jsx") || lowerType.includes("element"))
+      return state.colorJsx || getColorByType(type);
+
+    return state.colorVariable || getColorByType(type);
+  }
+
   public async init(baseUrl: string, $page: any, cache: any): Promise<void> {
     const _ = { baseUrl, $page, cache };
+
+    // Initialize default plugin settings safely
+    const settings: any = acode.require("settings");
+    if (!settings.value[PLUGIN_ID]) {
+      settings.value[PLUGIN_ID] = {
+        showIcons: true,
+        disablePreviewPopup: false,
+        previewDelay: "480",
+        pollingDebounceTimeout: "150",
+        colorClass: "#FFB834",
+        colorInterface: "#46D9FF",
+        colorType: "#10E5FA",
+        colorEnum: "#00F5D4",
+        colorMethod: "#D694FF",
+        colorFunction: "#60A5FA",
+        colorArrow: "#34D399",
+        colorProperty: "#99E65F",
+        colorObject: "#6EE7B7",
+        colorArray: "#FCD34D",
+        colorVariable: "#4ADE80",
+        colorJsx: "#22D3EE",
+      };
+      settings.update(false);
+    } else {
+      // Backwards compatibility layer for existing installations adding new keys
+      const state = settings.value[PLUGIN_ID];
+      if (state.disablePreviewPopup === undefined)
+        state.disablePreviewPopup = false;
+      if (state.pollingDebounceTimeout === undefined)
+        state.pollingDebounceTimeout = "150";
+      if (state.colorClass === undefined) state.colorClass = "#FFB834";
+      if (state.colorInterface === undefined) state.colorInterface = "#46D9FF";
+      if (state.colorType === undefined) state.colorType = "#10E5FA";
+      if (state.colorEnum === undefined) state.colorEnum = "#00F5D4";
+      if (state.colorMethod === undefined) state.colorMethod = "#D694FF";
+      if (state.colorFunction === undefined) state.colorFunction = "#60A5FA";
+      if (state.colorArrow === undefined) state.colorArrow = "#34D399";
+      if (state.colorProperty === undefined) state.colorProperty = "#99E65F";
+      if (state.colorObject === undefined) state.colorObject = "#6EE7B7";
+      if (state.colorArray === undefined) state.colorArray = "#FCD34D";
+      if (state.colorVariable === undefined) state.colorVariable = "#4ADE80";
+      if (state.colorJsx === undefined) state.colorJsx = "#22D3EE";
+      settings.update(false);
+    }
 
     this.intervalId = setInterval(() => {
       const editor = editorManager.editor;
@@ -56,15 +143,19 @@ export class BreadcrumbsPlugin {
     `;
 
     let currentFile = editorManager.activeFile;
-    let filename = currentFile ? currentFile.filename.toLowerCase() : "";
+    let filename = currentFile ? currentFile.filename : "Breadcrumbs";
+    let fileExtension = currentFile ? filename.split(".").pop() || "" : "";
 
     const prefix = document.createElement("span");
     prefix.style.cssText =
-      "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff)); flex-shrink: 0;";
-    // 🌟 Modified: Render only the SVG wrapper structure here
-    prefix.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" style="fill: none; stroke: var(--text-color, var(--primary-text-color, #ffffff)); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; margin-right: 5px;"><path d="M2 4h5v4H2zM9 4h5v2H9zm0 6h5v2H9zm-7 2h5v2H2z"/><path d="M4.5 8v4M11.5 6v4"/></svg>`;
+      "display: inline-flex; align-items: center; color: var(--text-color, var(--primary-text-color, #ffffff)); flex-shrink: 0; gap: 4px;";
 
-    // 🌟 Added: Create a specific text node for filename to enable reactive data-binding
+    this.prefixIconContainer = document.createElement("span");
+    this.prefixIconContainer.style.cssText =
+      "display: inline-flex; align-items: center; flex-shrink: 0;";
+    this.prefixIconContainer.innerHTML = getFileIconByType(fileExtension);
+    prefix.appendChild(this.prefixIconContainer);
+
     this.prefixTextEl = document.createElement("span");
     this.prefixTextEl.textContent = filename;
     prefix.appendChild(this.prefixTextEl);
@@ -113,7 +204,6 @@ export class BreadcrumbsPlugin {
         );
       }
 
-      // Reset cache keys on file tab migration
       this.lastDocString = "";
       this.lastScopesFingerprint = "";
 
@@ -143,9 +233,17 @@ export class BreadcrumbsPlugin {
 
   private queueUpdate(editor: EditorView) {
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
+
+    const settings: any = acode.require("settings");
+    const pluginSettings = settings.value[PLUGIN_ID] || {};
+    const delayDuration = parseInt(
+      pluginSettings.pollingDebounceTimeout || "150",
+      10,
+    );
+
     this.debounceTimeout = setTimeout(() => {
       this.updateBreadcrumbs(editor);
-    }, 150);
+    }, delayDuration);
   }
 
   private onGlobalSelectionChange = () => {
@@ -351,8 +449,12 @@ export class BreadcrumbsPlugin {
       flex: 1; min-width: 0; line-height: 1.35; gap: 1px;
     `;
 
-    const iconStr = getIconByType(block.type);
-    const colorStr = getColorByType(block.type);
+    const settings: any = acode.require("settings");
+    const pluginSettings = settings.value[PLUGIN_ID] || {};
+    const showIcons = pluginSettings.showIcons !== false;
+    const colorStr = this.getCustomColor(block.type);
+    // 🌟 ပြင်ဆင်လိုက်သည်- Preview Popup ရှိ Icon ဆီသို့ပါ Custom Color လှမ်းထည့်ပေးလိုက်သည်
+    const iconStr = showIcons ? getIconByType(block.type, colorStr) : "";
 
     headerLabel.innerHTML = `
       <span style="opacity: 0.45; font-size: 9px; font-weight: normal; letter-spacing: 0.3px;">Ln.${block.line}</span>
@@ -409,7 +511,6 @@ export class BreadcrumbsPlugin {
           document.body.appendChild(textarea);
           textarea.select();
           try {
-            // @ts-ignore
             document.execCommand("copy");
             copyBtn.className = "icon check";
             copyBtn.style.opacity = "1";
@@ -551,11 +652,14 @@ export class BreadcrumbsPlugin {
       containerEl.style.display = "flex";
     }
 
-    // 🌟 Added: Smoothly synchronize the active filename on every verification pass
-    if (this.prefixTextEl) {
-      this.prefixTextEl.textContent = currentFile
-        ? currentFile.filename
-        : "Breadcrumbs";
+    if (currentFile) {
+      if (this.prefixTextEl) {
+        this.prefixTextEl.textContent = currentFile.filename;
+      }
+      if (this.prefixIconContainer) {
+        const fileExtension = currentFile.filename.split(".").pop() || "";
+        this.prefixIconContainer.innerHTML = getFileIconByType(fileExtension);
+      }
     }
 
     if (!containerEl.parentElement && editor.dom) {
@@ -586,6 +690,10 @@ export class BreadcrumbsPlugin {
       pathEl.removeChild(pathEl.firstChild);
     }
 
+    const settings: any = acode.require("settings");
+    const pluginSettings = settings.value[PLUGIN_ID] || {};
+    const showIcons = pluginSettings.showIcons !== false;
+
     if (validScopes.length === 0) {
       const globalSpan = document.createElement("span");
       globalSpan.style.cssText =
@@ -605,9 +713,14 @@ export class BreadcrumbsPlugin {
         scopeSpan.style.cssText =
           "display: inline-flex; align-items: center; gap: 2px; cursor: pointer; user-select: none; -webkit-user-select: none;";
 
-        const iconHtml = getIconByType(block.type);
+        const customColor = this.getCustomColor(block.type);
+        // 🌟 ပြင်ဆင်လိုက်သည်- Main Breadcrumbs Bar ပေါ်ရှိ Icon ဆီသို့ပါ Custom Color လှမ်းထည့်ပေးလိုက်သည်
+        const iconHtml = showIcons
+          ? getIconByType(block.type, customColor)
+          : "";
         const isLast = index === validScopes.length - 1;
-        scopeSpan.innerHTML = `${iconHtml}<span style="color: ${getColorByType(block.type)}; font-weight: ${isLast ? "bold" : "normal"};">${block.name}</span>`;
+
+        scopeSpan.innerHTML = `${iconHtml}<span style="color: ${customColor}; font-weight: ${isLast ? "bold" : "normal"};">${block.name}</span>`;
 
         scopeSpan.addEventListener("click", (e) => {
           e.preventDefault();
@@ -626,11 +739,20 @@ export class BreadcrumbsPlugin {
         scopeSpan.addEventListener("touchstart", (e) => {
           this.blockClickBypass = false;
           if (this.pressTimer) clearTimeout(this.pressTimer);
+
+          const currentSettings = settings.value[PLUGIN_ID] || {};
+          if (currentSettings.disablePreviewPopup) return;
+
+          const configuredDelay = parseInt(
+            currentSettings.previewDelay || "480",
+            10,
+          );
+
           this.pressTimer = setTimeout(() => {
             this.blockClickBypass = true;
-            scopeSpan.style.textDecoration = `underline ${getColorByType(block.type)}`;
+            scopeSpan.style.textDecoration = `underline ${customColor}`;
             this.showCodePreviewPopup(block, fullCode, scopeSpan, filename);
-          }, 480);
+          }, configuredDelay);
         });
 
         scopeSpan.addEventListener("touchend", () => {
@@ -692,20 +814,205 @@ export class BreadcrumbsPlugin {
       this.container = null;
     }
     this.pathContainer = null;
-    this.prefixTextEl = null; // Clean target reference allocation
+    this.prefixTextEl = null;
+    this.prefixIconContainer = null;
     this.currentEditor = null;
     this.lastDocString = "";
     this.lastScopesFingerprint = "";
   }
 }
 
+// 🌟 Full 12 Node Types Prompt UI Mapping Сonfiguration
+const breadcrumbsSettings = {
+  get list() {
+    const settings = acode.require("settings");
+    const pluginState = settings.value[PLUGIN_ID] || {};
+    return [
+      {
+        key: "showIcons",
+        text: "Show Scope Icons",
+        info: "Display structure and layout icons on the breadcrumbs bar and inside the code popups.",
+        checkbox: !!pluginState.showIcons,
+      },
+      {
+        key: "disablePreviewPopup",
+        text: "Disable Preview Popup",
+        info: "Turn off the code preview card popup when long-pressing structural tokens.",
+        checkbox: !!pluginState.disablePreviewPopup,
+      },
+      {
+        key: "previewDelay",
+        text: "Popup Preview Delay",
+        info: "Configure the long-press holding duration required to trigger the code block preview popup.",
+        value: pluginState.previewDelay || "480",
+        select: [
+          ["300", "Fast (300ms)"],
+          ["480", "Normal (480ms)"],
+          ["800", "Slow (800ms)"],
+        ],
+      },
+      {
+        key: "pollingDebounceTimeout",
+        text: "Debounce Polling Timeout",
+        info: "Performance processing window delay (ms) for structural code re-indexing parsing requests.",
+        value: pluginState.pollingDebounceTimeout || "150",
+        select: [
+          ["100", "Aggressive (100ms)"],
+          ["150", "Balanced (150ms)"],
+          ["250", "Relaxed (250ms)"],
+          ["400", "Eco Battery Saver (400ms)"],
+        ],
+      },
+      // 🌟 တောင်းဆိုထားသော Custom Highlighting Key (၁၂) မျိုးလုံး၏ Prompt Panel များ
+      {
+        key: "colorClass",
+        text: "Class Block Color",
+        info: "Set structural highlighting hex code for Classes.",
+        value: pluginState.colorClass || "#FFB834",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#FFB834",
+      },
+      {
+        key: "colorInterface",
+        text: "Interface Block Color",
+        info: "Set structural highlighting hex code for Interfaces.",
+        value: pluginState.colorInterface || "#46D9FF",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#46D9FF",
+      },
+      {
+        key: "colorType",
+        text: "Type Block Color",
+        info: "Set structural highlighting hex code for Types/Type Aliases.",
+        value: pluginState.colorType || "#10E5FA",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#10E5FA",
+      },
+      {
+        key: "colorEnum",
+        text: "Enum Block Color",
+        info: "Set structural highlighting hex code for Enums.",
+        value: pluginState.colorEnum || "#00F5D4",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#00F5D4",
+      },
+      {
+        key: "colorMethod",
+        text: "Method Block Color",
+        info: "Set structural highlighting hex code for Methods.",
+        value: pluginState.colorMethod || "#D694FF",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#D694FF",
+      },
+      {
+        key: "colorFunction",
+        text: "Function Block Color",
+        info: "Set structural highlighting hex code for Functions.",
+        value: pluginState.colorFunction || "#60A5FA",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#60A5FA",
+      },
+      {
+        key: "colorArrow",
+        text: "Arrow Function Color",
+        info: "Set structural highlighting hex code for Arrow Functions.",
+        value: pluginState.colorArrow || "#34D399",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#34D399",
+      },
+      {
+        key: "colorProperty",
+        text: "Property Block Color",
+        info: "Set structural highlighting hex code for Object Properties.",
+        value: pluginState.colorProperty || "#99E65F",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#99E65F",
+      },
+      {
+        key: "colorObject",
+        text: "Object Block Color",
+        info: "Set structural highlighting hex code for Objects.",
+        value: pluginState.colorObject || "#6EE7B7",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#6EE7B7",
+      },
+      {
+        key: "colorArray",
+        text: "Array Block Color",
+        info: "Set structural highlighting hex code for Arrays.",
+        value: pluginState.colorArray || "#FCD34D",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#FCD34D",
+      },
+      {
+        key: "colorVariable",
+        text: "Variable Block Color",
+        info: "Set structural highlighting hex code for Variables.",
+        value: pluginState.colorVariable || "#4ADE80",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#4ADE80",
+      },
+      {
+        key: "colorJsx",
+        text: "JSX / TSX Element Color",
+        info: "Set structural highlighting hex code for JSX Components and XML Elements.",
+        value: pluginState.colorJsx || "#22D3EE",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#22D3EE",
+      },
+    ];
+  },
+  cb: (key: string, value: any) => {
+    const settings = acode.require("settings");
+    if (!settings.value[PLUGIN_ID]) {
+      settings.value[PLUGIN_ID] = {};
+    }
+
+    // Auto prefix '#' formatting handler
+    if (key.startsWith("color") && typeof value === "string") {
+      let trimmedColor = value.trim();
+      if (
+        !trimmedColor.startsWith("#") &&
+        /^[0-9A-Fa-f]{3,8}$/.test(trimmedColor)
+      ) {
+        trimmedColor = "#" + trimmedColor;
+      }
+      settings.value[PLUGIN_ID][key] = trimmedColor;
+    } else {
+      settings.value[PLUGIN_ID][key] = value;
+    }
+
+    settings.update(true);
+
+    myBreadcrumbs.clearCache();
+    if (editorManager && editorManager.editor) {
+      myBreadcrumbs.updateBreadcrumbs(editorManager.editor);
+    }
+  },
+};
+
 const myBreadcrumbs = new BreadcrumbsPlugin();
+
 acode.setPluginInit(
   PLUGIN_ID,
   async (baseUrl: string, $page: any, cache: any) => {
     await myBreadcrumbs.init(baseUrl, $page, cache);
   },
+  breadcrumbsSettings,
 );
+
 acode.setPluginUnmount(PLUGIN_ID, () => {
   myBreadcrumbs.destroy();
 });

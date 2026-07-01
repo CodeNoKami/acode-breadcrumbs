@@ -4,7 +4,7 @@ A smart, high-performance, and **theme-adaptive VS Code-style Breadcrumbs naviga
 
 ## 📸 Previews
 
-### Flawless Nested Scope Tracking & Dynamic Methods [v2.4.0]
+### Flawless Nested Scope Tracking & Dynamic Methods [v2.4.0+]
 
 Active architectural representation mapping cleanly from the active filename down through Classes, Methods, Array Operations, and deeply nested blocks or IIFEs:
 
@@ -26,33 +26,36 @@ types.ts › 📄 UserRole › 🟢 config_list › 🗂️ properties
 
 ## ✨ Features
 
-- **🗂️ VS Code-Parity Path Mapping [v2.4.0]:** Reconfigured the layout sequence to follow a strict Filename › Scope › Sub-Scope hierarchy. The breadcrumbs bar anchors your active filename as the root node before drilling down into the code structure, mirroring desktop IDE standards perfectly.
-- **🎯 Interactive Code Navigation [v2.2.0+]:** Every scope element rendered on the bar is **fully clickable**. Clicking a scope path item instantly jumps your editor cursor directly to the corresponding block's start position (from offset) and immediately refocuses the editor so you can continue typing without friction.
-- **🧹 Noise-Free Architectural Outline [v2.4.0]:** Intelligently filters out low-level control-flow scopes (such as if, for, while, and try-catch blocks). By focusing purely on structural definitions (Classes, Functions, and Methods), the interface remains impeccably clean and distraction-free.
-- **🔄 Structural Scope Fingerprint Engine [v2.3.3]:** Features a unique structural fingerprinting mechanism (type-from-to string aggregation) that completely eliminates stale display data. Moving your cursor between complex parent blocks and deeply nested child functions (like an IIFE structure) triggers an instantaneous path update.
-- **🔍 Long-Press Code Preview & Theme-Adaptive Highlights [v2.2.2+]:** Long-pressing any breadcrumb item triggers a high-definition code snippet preview popup strictly anchored beneath the navigation bar. It is powered by a robust luminance-aware engine that automatically matches your active editor theme (Dark/Light) to prevent unreadable token colors.
-- **📐 Native Mobile Touch Resizing [v2.3.3]:** Engineered with a native touchscreen drag gesture handle at the bottom corner of the preview popup. Users can dynamically scale the preview window height and width smoothly, bypassing mobile layout limitations.
-- **⚡ Pure Method Chaining Awareness:** Isolates precise method names inside chains (e.g., extracts just filter, map, or reduce instead of the whole functional block) and tracks down the original caller identifier (e.g., usersList.filter).
-- **🛡️ Smart JSX Event Handler Filtering:** Intelligently detects and filters out inline arrow function parameters inside JSX attributes (e.g., avoids rendering trailing event arguments like > e from onClick={(e) => {}}), keeping component paths completely clean.
-- **🟢 Granular Variable Tracking:** Full tracking awareness for standard localized variable definitions (const, let, var), mapping them down carefully within nested blocks.
-- **🔒 Smart Environment Filter:** Automatically activates within JavaScript, JSX, TypeScript, and TSX configurations, while keeping itself cleanly hidden inside plain text, HTML, CSS, or Markdown files.
-- **🎨 Premium Thin-Line Icons & Matte Themes [v2.2.1+]:** Packed with lightweight geometric SVG icons (stroke-width="1.3") calibrated for high-resolution mobile AMOLED screens. Built using a premium matte-pastel palette that balances high-contrast accessibility and eye care.
-
-## 🖼️ Preview Images
+- **🗂️ VS Code-Parity Path Mapping [v2.4.0+]:** Reconfigured the layout sequence to follow a strict Filename › Scope › Sub-Scope hierarchy. The breadcrumbs bar anchors your active filename as the root node before drilling down into the code structure, mirroring desktop IDE standards perfectly.
+- **🎨 Full 12-Node Color Customization Suite [v2.5.0]:** Expanded the preferences panel with dedicated hex-color inputs for all primary architectural tokens (Class, Interface, Type, Enum, Method, Function, Arrow, Property, Object, Array, Variable, and JSX).
+- **🔄 Synchronized Icon & Typography Palettes [v2.5.0]:** Completely overhauled the vector graphics engine. Customizing a scope color now automatically updates both the text label and its corresponding SVG icon dynamically, replacing the legacy behavior where icons remained hardcoded to default purple (#D694FF).
+- **⚙️ Advanced UI & Interaction Toggles [v2.5.0]:** Added explicit controls to fully personalize your workspace:
+  - showIcons: Globally toggles structural layout icons on/off across both the main navigation bar and code popups.
+  - disablePreviewPopup: Allows users to turn off the long-press preview card behavior entirely for a lower footprint.
+- **⚡ Performance & Delay Calibration [v2.5.0]:** High-precision settings adjustments to balance performance and touch responses:
+  - previewDelay: Configurable long-press holding thresholds (300ms Fast, 480ms Normal, 800ms Slow) to control popup responsiveness.
+  - pollingDebounceTimeout: Tailorable AST parsing debounce windows (100ms for aggressive indexing up to 400ms Eco Battery Saver for lower-end devices).
+- **🛡️ Automated Hex Formatting Sanitizer [v2.5.0]:** Built-in input validator that automatically checks custom color settings and prepends the missing # prefix to raw hexadecimal strings to ensure bulletproof CSS styling.
+- **🚀 Reactive Cache-Flush Engine [v2.5.0]:** Implements a clearCache() pipeline that flushes internal code fingerprint caches instantly upon updating settings, forcing an immediate visual repaint without requiring a file reload or application restart.
+- **🎯 Interactive Code Navigation [v2.2.0+]:** Every scope element rendered on the bar is **fully clickable**. Clicking a scope path item instantly jumps your editor cursor directly to the corresponding block's start position (from offset) and immediately refocuses the editor.
+- **🧹 Noise-Free Architectural Outline [v2.4.0+]:** Intelligently filters out low-level control-flow scopes (such as if, for, while, and try-catch blocks). By focusing purely on structural definitions, the interface remains impeccably clean and distraction-free.
+- **🔍 Long-Press Code Preview & Theme-Adaptive Highlights [v2.2.2+]:** Long-pressing any breadcrumb item triggers a high-definition code snippet preview popup strictly anchored beneath the navigation bar. Powered by a luminance-aware engine that automatically matches your active editor theme (Dark/Light).
+- **📐 Native Mobile Touch Resizing [v2.3.3+]:** Engineered with a native touchscreen drag gesture handle at the bottom corner of the preview popup. Users can dynamically scale the preview window height and width smoothly.
 
 ## 🎨 Icon & Theme Standards Map
 
-| Symbol Type             | UI Icon | Color Palette     | Description / Node Type Match                                           |
-| ----------------------- | ------- | ----------------- | ----------------------------------------------------------------------- |
-| **Class / Interface**   | 🔲      | #61AFEF / #4EC9B0 | OOP Bracket Frame Boundary & TypeScript Contracts                       |
-| **Type Alias / Enum**   | 📄      | #56B6C2 / #98C379 | TS Explicit Types, Enums & Definition Specs                             |
-| **Method**              | 📦      | #C792EA           | Soft Lavender Purple / VS Code-Style 3D Method Wireframe & Constructors |
-| **Function / Arrow**    | 𝑓 / 🔄  | #61AFEF / #D19A66 | Neon Blue global scopes & Lambda Callbacks / IIFEs                      |
-| **Variable / Property** | 🟢 / 🗂️ | #E06C75 / #C3E88D | Local Block-Scoped variables & Object Property keys                     |
-| **Method Chain**        | 🍇      | #A371F7           | Deep Violet / Fluid Pipeline Operators (.map, .filter)                  |
-| **JSX Element**         | ⚛️      | #4fc1ff           | Bright Sky React Blue / UI Components & Helix Fragments                 |
+_(Note: All palette colors listed below represent the premium matte defaults and can be fully customized inside the plugin settings panel)._
+| Symbol Type | UI Icon | Default Palette | Description / Node Type Match |
+|---|---|---|---|
+| **Class / Interface** | 🔲 | #FFB834 / #46D9FF | OOP Bracket Frame Boundary & TypeScript Contracts |
+| **Type Alias / Enum** | 📄 | #10E5FA / #00F5D4 | TS Explicit Types, Enums & Definition Specs |
+| **Method** | 📦 | #D694FF | Soft Lavender Purple / VS Code-Style 3D Method Wireframe & Constructors |
+| **Function / Arrow** | 𝑓 / 🔄 | #60A5FA / #34D399 | Neon Blue global scopes & Lambda Callbacks / IIFEs |
+| **Variable / Property** | 🟢 / 🗂️ | #4ADE80 / #99E65F | Local Block-Scoped variables & Object Property keys |
+| **Object / Array** | 📦 / 📊 | #6EE7B7 / #FCD34D | Data Structure Boundaries, Map Definitions & Array Lists |
+| **JSX Element** | ⚛️ | #22D3EE | Bright Sky React Blue / UI Components & Helix Fragments |
 
-## 🖼️ Preview Image
+## 🖼️ Preview Images
 
 ![Breadcrumbs Preview 1](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview1.png)
 ![Breadcrumbs Preview 2](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview2.png)
@@ -92,7 +95,7 @@ npm run build
 
 ## 🛠️ Tech Stack & Configuration
 
-- **Version:** v2.4.0 (VS Code-Parity Architectural Release)
+- **Version:** v2.5.0 (Fully Customizable Palette & Preferences Release)
 - **Language:** TypeScript 5+ (Strict Type Checking)
 - **Parser Core:** CodeMirror 6 Lezer JavaScript/TypeScript Dialect Tree
 - **Framework Integration:** Acode Extension Lifecycle API
