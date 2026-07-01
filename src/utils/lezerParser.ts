@@ -3,7 +3,7 @@ import { SyntaxNode, Tree } from "@lezer/common";
 export interface ScopeBlock {
   id: string;
   name: string;
-  type: string;
+  type: string; // Will hold: "conditional" | "looping" | "tcf" | "event" | "function" | etc.
   from: number;
   to: number;
   line: number;
@@ -35,9 +35,29 @@ export function getScopeType(nodeType: string): string | null {
     case "Property":
     case "PropertyDeclaration":
       return "property";
-    case "VariableDeclaration": // 🌟 Fixed: Changed from VariableDeclarator to match Lezer JS AST
+    case "VariableDeclaration":
     case "AssignmentExpression":
       return "variable";
+
+    //  Conditionals (Type Separation for Custom SVG/Color)
+    case "IfStatement":
+    case "SwitchStatement":
+      return "conditional";
+
+    //  Loopings (Type Separation for Custom SVG/Color)
+    case "ForStatement":
+    case "ForInStatement":
+    case "ForOfStatement":
+    case "WhileStatement":
+    case "DoStatement":
+      return "looping";
+
+    // Try-Catch-Finally (Type Separation for Custom SVG/Color)
+    case "TryStatement":
+    case "CatchClause":
+    case "FinallyClause":
+      return "tcf";
+
     default:
       return null;
   }
@@ -57,7 +77,6 @@ const directNameTokens = [
   "Identifier",
 ];
 
-// 🌟 Highly Robust Identifier Extractor using Recursive Subtree Search
 function getIdentifierName(
   node: SyntaxNode | null,
   code: string,
@@ -71,7 +90,6 @@ function getIdentifierName(
     return "constructor";
   }
 
-  // Deep search helper to find the first valid name token within the node's hierarchy
   function findNameNode(n: SyntaxNode): SyntaxNode | null {
     if (directNameTokens.includes(n.name)) {
       return n;
@@ -89,19 +107,6 @@ function getIdentifierName(
   if (nameNode) {
     return code.slice(nameNode.from, nameNode.to).trim();
   }
-  return null;
-}
-
-function getParamName(node: SyntaxNode, code: string): string | null {
-  const paramList = node.getChild("ParamList");
-  if (paramList) {
-    const firstParam =
-      paramList.getChild("VariableDefinition") ||
-      paramList.getChild("Identifier");
-    if (firstParam) return code.slice(firstParam.from, firstParam.to).trim();
-  }
-  const directParam = node.getChild("VariableDefinition");
-  if (directParam) return code.slice(directParam.from, directParam.to).trim();
   return null;
 }
 
@@ -199,8 +204,6 @@ function getLookbackName(
   nodeFrom: number,
   code: string,
 ): { name: string; type: string } | null {
-  // Optimization: Lightweight character guard checking backwards from node entry point
-  // Aborts expensive string slicing and regex engines if no assignment operator or key indicator exists
   let idx = nodeFrom - 1;
   let hasValidTrigger = false;
   while (idx >= 0 && idx >= nodeFrom - 120) {
@@ -246,8 +249,109 @@ export function resolveBreadcrumbs(
         continue;
       }
 
-      // Block Tier 1: Anonymous Data Sets & Callbacks (Functions, Object Literals, Array Methods)
+      //  Block Tier 0.5: Highly-Optimized Structural Scopes (conditional, looping, tcf)
       if (
+        mappedType &&
+        ["conditional", "looping", "tcf"].includes(mappedType)
+      ) {
+        let label = "";
+
+        if (nodeType === "IfStatement") {
+          // Detect 'else if' branch cleanly
+          if (currentNode.parent?.name === "IfStatement") {
+            label = "else if";
+            // Anti-redundancy guard: Mark parent chain as parsed so it doesn't duplicate 'if' blocks
+            processedNodes.add(`${currentNode.parent.from}-IfStatement`);
+          } else {
+            let elseToken = currentNode.firstChild;
+            while (elseToken) {
+              if (elseToken.name === "else") break;
+              elseToken = elseToken.nextSibling;
+            }
+
+            if (elseToken && cursorPos >= elseToken.to) {
+              let alternateNode = elseToken.nextSibling;
+              while (alternateNode && alternateNode.name === "Comment") {
+                alternateNode = alternateNode.nextSibling;
+              }
+              // If the alternate branch is not another IfStatement, it's a pure 'else' block
+              if (alternateNode && alternateNode.name !== "IfStatement") {
+                label = "else";
+              } else {
+                label = "if";
+              }
+            } else {
+              label = "if";
+            }
+          }
+        } else if (nodeType === "SwitchStatement") label = "switch";
+        else if (nodeType === "ForStatement") label = "for";
+        else if (nodeType === "ForInStatement") label = "for-in";
+        else if (nodeType === "ForOfStatement") label = "for-of";
+        else if (nodeType === "WhileStatement") label = "while";
+        else if (nodeType === "DoStatement") label = "do";
+        else if (nodeType === "TryStatement") label = "try";
+        else if (nodeType === "CatchClause") label = "catch";
+        else if (nodeType === "FinallyClause") label = "finally";
+
+        if (label) {
+          scopes.unshift({
+            id: `${mappedType}-${currentNode.from}`,
+            name: label,
+            type: mappedType, // Directly maps to "conditional", "looping", or "tcf"
+            from: currentNode.from,
+            to: currentNode.to,
+            line: 0,
+          });
+          processedNodes.add(nodeKey);
+          currentNode = currentNode.parent;
+          continue;
+        }
+      }
+      // Block Tier 0.7: Event Listeners (addEventListener, removeEventListener)
+      else if (nodeType === "CallExpression") {
+        const calleeName = getCleanCallerName(currentNode.firstChild, code);
+        if (
+          calleeName &&
+          (calleeName.endsWith("addEventListener") ||
+            calleeName.endsWith("removeEventListener"))
+        ) {
+          const isAdd = calleeName.endsWith("addEventListener");
+          const methodName = isAdd ? "addEventListener" : "removeEventListener";
+
+          let eventType = "";
+          const argList = currentNode.getChild("ArgList");
+          if (argList) {
+            let firstArg = argList.firstChild;
+            if (firstArg && firstArg.name === "(") {
+              firstArg = firstArg.nextSibling;
+            }
+            if (
+              firstArg &&
+              (firstArg.name === "String" || firstArg.name === "Literal")
+            ) {
+              const rawStr = code.slice(firstArg.from, firstArg.to).trim();
+              eventType = rawStr.replace(/^['"`]|[ '"`]$/g, "");
+            }
+          }
+
+          const displayName = eventType
+            ? `${methodName}("${eventType}")`
+            : methodName;
+
+          scopes.unshift({
+            id: `event-${currentNode.from}`,
+            name: displayName,
+            type: "event",
+            from: currentNode.from,
+            to: currentNode.to,
+            line: 0,
+          });
+          processedNodes.add(nodeKey);
+        }
+      }
+      // Block Tier 1: Anonymous Data Sets & Callbacks (Functions, Object Literals, Array Methods)
+      else if (
         [
           "ObjectExpression",
           "ArrayExpression",
@@ -286,7 +390,7 @@ export function resolveBreadcrumbs(
         const parent = currentNode.parent;
         if (
           parent &&
-          (parent.name === "VariableDeclaration" || // 🌟 Fixed from VariableDeclarator
+          (parent.name === "VariableDeclaration" ||
             parent.name === "Property" ||
             parent.name === "PropertyDeclaration" ||
             parent.name === "AssignmentExpression")
@@ -546,14 +650,12 @@ export function resolveBreadcrumbs(
       currentNode = currentNode.parent;
     }
 
-    // Optimization: High-Performance O(N) single pass tracking map for line-start indices
-    // and instant O(log L) Binary Search resolving line indexes across active scope structures
+    // High-Performance Binary Search Line Resolver Block
     if (scopes.length > 0) {
       const lineStarts: number[] = [0];
       const codeLen = code.length;
       for (let i = 0; i < codeLen; i++) {
         if (code.charCodeAt(i) === 10) {
-          // Look for '\n'
           lineStarts.push(i + 1);
         }
       }

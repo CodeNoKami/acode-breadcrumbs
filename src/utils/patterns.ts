@@ -15,7 +15,10 @@ export type ScopeType =
   | "object"
   | "array"
   | "variable"
-  | "jsx";
+  | "jsx"
+  | "conditional" // 🌟 Added: Control Flow Conditionals (if, switch)
+  | "looping" // 🌟 Added: Control Flow Loops (for, while)
+  | "tcf"; // 🌟 Added: Error Handling Safety Blocks (try-catch-finally)
 
 declare var acode: any;
 
@@ -33,13 +36,16 @@ export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
   array: "#FCD34D",
   variable: "#4ADE80",
   jsx: "#22D3EE",
+  conditional: "#d68600",
+  looping: "#52ff72",
+  tcf: "#fa3b49",
 };
 
 /**
  * Resolves a hexadecimal color token optimized for dark/AMOLED themes with high contrast,
  * modern neon accents, visual balance, and distinct mapping for active scopes.
  * Supports custom dynamic configuration bridges loaded via Acode user settings JSON payload.
- * * @param type - The registered layout scope type
+ * @param type - The registered layout scope type
  * @returns HEX color string or functional CSS variable fallback
  */
 export function getColorByType(type: ScopeType | string): string {
@@ -67,13 +73,13 @@ export function getColorByType(type: ScopeType | string): string {
  * Generates an inline vector SVG icon string mapped to specific structural scopes.
  * Optimized with balanced geometric stroke paths for professional 16x16 viewboxes.
  * @param type - The target element configuration type
+ * @param customColor - Optional prioritized override token
  * @returns Clean, standard-compliant XML/SVG inline asset string
  */
 export function getIconByType(
   type: ScopeType | string,
   customColor?: string,
 ): string {
-  // 🌟 ပြင်ဆင်လိုက်သည်- Custom Color ပါလာရင် သုံးမယ်၊ မပါမှ Default Color ယူမယ်
   const color = customColor || getColorByType(type);
   const svgStyle = `width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px; display:inline-block;"`;
 
@@ -102,6 +108,16 @@ export function getIconByType(
       return `<svg ${svgStyle}><rect x="2" y="3" width="12" height="10" rx="2"/><circle cx="6" cy="8" r="1.5"/><path d="M9 8h2"/></svg>`;
     case "jsx":
       return `<svg ${svgStyle}><path d="M5 4L1 8l4 4M11 4l4 4-4 4M9 3L7 13"/></svg>`;
+    case "conditional":
+      // Flowchart Decision Diamond (If/Else Branching Representation)
+      return `<svg ${svgStyle}><path d="M8 2.5l5.5 5.5-5.5 5.5-5.5-5.5z"/></svg>`;
+    case "looping":
+      // Circular Progress Vector with Arrow (Iteration/Recursion Representation)
+      return `<svg ${svgStyle}><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9L14 6.5"/><path d="M14 2.5v4h-4"/></svg>`;
+    case "tcf":
+      // Defensive Wrapper Shield (Exception Interception/Safety Shield Representation)
+      return `<svg ${svgStyle}><path d="M3.5 3h9v4.5c0 3.2-2 6-4.5 7-2.5-1-4.5-3.8-4.5-7V3z"/></svg>`;
+
     default:
       return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 5.5L7.5 8 5 10.5"/></svg>`;
   }

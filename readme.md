@@ -1,23 +1,24 @@
 # Acode Breadcrumbs Plugin
 
-A smart, high-performance, and **theme-adaptive VS Code-style Breadcrumbs navigation bar** for Acode Editor. It brings desktop-grade code structure visibility and fluid navigation right onto your mobile screen, mapping out your classes, methods, functions, arrays, and objects in real-time using a powerful Hybrid AST Parsing Engine.
+A high-performance, theme-adaptive, desktop-grade **VS Code-style Breadcrumbs Navigation Bar** engineered specifically for the Acode Editor.
+This plugin brings deep architectural visibility and fluid source code navigation to mobile viewports. Powered by a lightweight, real-time **Lezer AST Parsing Engine**, it dynamically maps structural syntax definitions (classes, methods, control flows, loops) into an interactive hierarchy directly above your active viewport.
 
 ## 📸 Previews
 
-### Flawless Nested Scope Tracking & Dynamic Methods [v2.4.0+]
+### Flawless Nested Scope Tracking & Dynamic Methods [v2.6.0]
 
-Active architectural representation mapping cleanly from the active filename down through Classes, Methods, Array Operations, and deeply nested blocks or IIFEs:
+Real-time structural rendering mapping cleanly from the active filename through classes, methods, context blocks, and loops:
 
 ```
-database.ts › 🔲 DatabaseService › 📦 constructor
-userController.js › 🍇 usersList.filter
-app.tsx › 🔄 iifeModule
+database.ts › 🔶 DatabaseService › 📦 constructor › 🔄 while
+userController.js › 🍇 usersList.filter › 🔶 if
+app.tsx › 🔄 iifeModule › 🛡️ try
 
 ```
 
 ### TypeScript Type & Data Awareness
 
-Clean UI feedback for advanced TS definitions, Type annotations, Arrays, Variables, and nested Configurations:
+Clean UI feedback for advanced TS constraints, Type interfaces, array lists, and variable scopes:
 
 ```
 types.ts › 📄 UserRole › 🟢 config_list › 🗂️ properties
@@ -26,50 +27,110 @@ types.ts › 📄 UserRole › 🟢 config_list › 🗂️ properties
 
 ## ✨ Features
 
-- **🗂️ VS Code-Parity Path Mapping [v2.4.0+]:** Reconfigured the layout sequence to follow a strict Filename › Scope › Sub-Scope hierarchy. The breadcrumbs bar anchors your active filename as the root node before drilling down into the code structure, mirroring desktop IDE standards perfectly.
-- **🎨 Full 12-Node Color Customization Suite [v2.5.0]:** Expanded the preferences panel with dedicated hex-color inputs for all primary architectural tokens (Class, Interface, Type, Enum, Method, Function, Arrow, Property, Object, Array, Variable, and JSX).
-- **🔄 Synchronized Icon & Typography Palettes [v2.5.0]:** Completely overhauled the vector graphics engine. Customizing a scope color now automatically updates both the text label and its corresponding SVG icon dynamically, replacing the legacy behavior where icons remained hardcoded to default purple (#D694FF).
-- **⚙️ Advanced UI & Interaction Toggles [v2.5.0]:** Added explicit controls to fully personalize your workspace:
-  - showIcons: Globally toggles structural layout icons on/off across both the main navigation bar and code popups.
-  - disablePreviewPopup: Allows users to turn off the long-press preview card behavior entirely for a lower footprint.
-- **⚡ Performance & Delay Calibration [v2.5.0]:** High-precision settings adjustments to balance performance and touch responses:
-  - previewDelay: Configurable long-press holding thresholds (300ms Fast, 480ms Normal, 800ms Slow) to control popup responsiveness.
-  - pollingDebounceTimeout: Tailorable AST parsing debounce windows (100ms for aggressive indexing up to 400ms Eco Battery Saver for lower-end devices).
-- **🛡️ Automated Hex Formatting Sanitizer [v2.5.0]:** Built-in input validator that automatically checks custom color settings and prepends the missing # prefix to raw hexadecimal strings to ensure bulletproof CSS styling.
-- **🚀 Reactive Cache-Flush Engine [v2.5.0]:** Implements a clearCache() pipeline that flushes internal code fingerprint caches instantly upon updating settings, forcing an immediate visual repaint without requiring a file reload or application restart.
-- **🎯 Interactive Code Navigation [v2.2.0+]:** Every scope element rendered on the bar is **fully clickable**. Clicking a scope path item instantly jumps your editor cursor directly to the corresponding block's start position (from offset) and immediately refocuses the editor.
-- **🧹 Noise-Free Architectural Outline [v2.4.0+]:** Intelligently filters out low-level control-flow scopes (such as if, for, while, and try-catch blocks). By focusing purely on structural definitions, the interface remains impeccably clean and distraction-free.
-- **🔍 Long-Press Code Preview & Theme-Adaptive Highlights [v2.2.2+]:** Long-pressing any breadcrumb item triggers a high-definition code snippet preview popup strictly anchored beneath the navigation bar. Powered by a luminance-aware engine that automatically matches your active editor theme (Dark/Light).
-- **📐 Native Mobile Touch Resizing [v2.3.3+]:** Engineered with a native touchscreen drag gesture handle at the bottom corner of the preview popup. Users can dynamically scale the preview window height and width smoothly.
+### 🚀 Core Navigation Engine
 
-## 🎨 Icon & Theme Standards Map
+- **🗂️ VS Code-Parity Path Mapping:** Anchors the active filename as the structural root node before drilling down into the file architecture (Filename › Scope › Sub-Scope), matching standard desktop IDE layouts.
+- **🎯 Interactive Offset Navigation:** Every segment rendered on the breadcrumbs bar is a fully clickable target. Tap any scope to instantly jump the editor cursor to the corresponding code block offset and focus the viewport.
+- **🔄 Balanced Scope Aggregation Engine [v2.6.0]:** Intelligently balances syntax accuracy with UX sanity. Traverses the AST tree to expose nested loops, conditionals, and error handling without cluttering the screen or overwhelming your mobile viewport layout.
 
-_(Note: All palette colors listed below represent the premium matte defaults and can be fully customized inside the plugin settings panel)._
-| Symbol Type | UI Icon | Default Palette | Description / Node Type Match |
+### 🎨 Premium UI & Deep Customization Suite
+
+- **🎨 15-Node High-Contrast Palette Configurator [v2.6.0]:** Offers individual Hex text inputs in the settings dashboard for all 15 supported semantic layout structures (including newly added Control Flow blocks).
+- **🔄 Synchronized Icon & Typography Palettes:** Features a unified vector asset pipeline. Customizing a scope color instantly updates both the typographical label color and its corresponding thin-line SVG icon layout simultaneously.
+- **🔍 Luminance-Aware Theme Adaptivity:** Automatically reads the active editor canvas background luminance. It hooks into computed variables to map syntax colors dynamically to custom Light (GitHub-Light inspired) or Matte Dark (One-Dark/Dracula hybrid) standards seamlessly.
+- **✨ Acrylic Frosted Glass Overlay:** Employs a hardware-accelerated backdrop blur filter underneath long-press structural code previews for an immersive visual experience.
+
+### ⚡ Performance & Calibration Control
+
+- **⚙️ Interaction Behavioral Toggles:** Fine-tune workspace footprints via dedicated configuration nodes:
+  - showIcons: Globally toggle structural icons across the navigation bar and popups.
+  - disablePreviewPopup: Completely disable long-press hover card behaviors on memory-constrained systems.
+- **⏱️ High-Precision Processing Calibration:** Fully custom debounce parameters:
+  - previewDelay: Adjust long-press threshold timings (300ms, 480ms, 800ms).
+  - pollingDebounceTimeout: Scale AST re-parsing limits between 100ms (real-time aggressive) and 400ms (Eco-mode battery saver).
+- **🛡️ Hex Input Validation & Caching Guard:** Auto-sanitizes manual hex color settings by validating and prepending missing # prefixes. Includes an instantaneous clearCache() layout trigger to apply setting changes on-the-fly without workspace reloads.
+
+## 🎨 Scope Syntax & Theme Mapping
+
+All vector icons are rendered via optimized 16x16 viewport inline SVGs with standard-compliant line weight balancing.
+| Token Scope Type | Vector Concept | Default Palette | Node Type / Abstract Mapping Context |
 |---|---|---|---|
-| **Class / Interface** | 🔲 | #FFB834 / #46D9FF | OOP Bracket Frame Boundary & TypeScript Contracts |
-| **Type Alias / Enum** | 📄 | #10E5FA / #00F5D4 | TS Explicit Types, Enums & Definition Specs |
-| **Method** | 📦 | #D694FF | Soft Lavender Purple / VS Code-Style 3D Method Wireframe & Constructors |
-| **Function / Arrow** | 𝑓 / 🔄 | #60A5FA / #34D399 | Neon Blue global scopes & Lambda Callbacks / IIFEs |
-| **Variable / Property** | 🟢 / 🗂️ | #4ADE80 / #99E65F | Local Block-Scoped variables & Object Property keys |
-| **Object / Array** | 📦 / 📊 | #6EE7B7 / #FCD34D | Data Structure Boundaries, Map Definitions & Array Lists |
-| **JSX Element** | ⚛️ | #22D3EE | Bright Sky React Blue / UI Components & Helix Fragments |
+| **class** | 🔲 | #FFB834 | Object-Oriented Blueprint classes & declarations |
+| **interface** | 🔲 (Dashed) | #46D9FF | TypeScript Structural Model Contracts |
+| **type** | 📄 | #10E5FA | Type Aliases, Union, and Intersection specs |
+| **enum** | 📄 | #00F5D4 | Numeric / String Enumeration definitions |
+| **method** | 📦 | #D694FF | Inside Class Functions & Object Constructors |
+| **function** | _𝑓_ | #60A5FA | Global lexical declarations & functional scopes |
+| **arrow** | 🏹 | #34D399 | Lambda Callbacks, Inline Promises & Anonymous expressions |
+| **property** | 🗂️ | #99E65F | Explicit Key/Value mappings inside JSON or literals |
+| **object** | 📦 | #6EE7B7 | Instantiated structural JSON Objects & configurations |
+| **array** | 📊 | #FCD34D | Iterable Array brackets & assignment signatures |
+| **variable** | 🟢 | #4ADE80 | Local mutable/immutable blocks (let, const, var) |
+| **jsx** | ⚛️ | #22D3EE | React Components, XML Fragment tags & layout blocks |
+| **conditional** [v2.6.0] | 🔶 | #d68600 | Flowchart Decision Nodes (if, else, switch) |
+| **looping** [v2.6.0] | 🔄 | #52ff72 | Cyclic Iteration Nodes (for, while, do-while) |
+| **tcf** [v2.6.0] | 🛡️ | #fa3b49 | Defensive Exception Enclosures (try, catch, finally) |
 
-## 🖼️ Preview Images
+## 🛠️ Contributor & Architecture Extension Guide
 
-![Breadcrumbs Preview 1](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview1.png)
-![Breadcrumbs Preview 2](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview2.png)
-![Breadcrumbs Preview 3](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview3.png)
-![Breadcrumbs Preview 4](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview4.png)
-![Breadcrumbs Preview 5](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview5.png)
-![Popup Preview Screenshot Light](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview_screenshot_light.png)
-![Popup Preview Screenshot Dark](https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/preview_screenshot_dark.png)
+The plugin evaluates structural trees into a single visual state array using a decoupled architectural workflow:
 
-## 📦 Installation & Build
+```
+[CodeMirror Viewport Change]
+            │
+            ▼
+ [lezerParser.ts] ──► Decodes Raw Lezer Tree via Nodes Range
+            │
+            ▼
+    [ScopeType Evaluation]
+            │
+            ▼
+   [patterns.ts]  ──► Matches Scope Type to Vector Path + Color Token
+            │
+            ▼
+  [DOM Representation] (Breadcrumb Bar Updates)
 
-If you are maintaining this plugin locally or building it from source inside your development environment:
+```
 
-1.  **Clone the repository:**
+### Project Anatomy
+
+- main.ts: Orchestrates workspace layout injections, window touch event bindings, long-press gestures, preference caching, and DOM updates.
+- lezerParser.ts: Evaluates active syntax trees. Contains specific language rules determining if an active tree offset falls under structural declaration categories or helper blocks.
+- patterns.ts: Defines the UI/UX components. Holds type structures, default premium styling dictionaries, and custom SVG paths.
+
+### Adding New Language Tokens
+
+To register and implement a new syntax block mapping (e.g., adding a database query tag or markdown scope):
+
+1.  **Extend the Type Base:** Open patterns.ts and append your target key string identifier into the ScopeType union:
+
+```typescript
+export type ScopeType = "class" | "function" | "yourNewToken";
+```
+
+2.  **Assign Core Identity Colors:** Update the fallback color configuration map (DEFAULT_BREADCRUMBS_COLORS):
+
+```typescript
+export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
+  yourNewToken: "#FF5555", // Modern Red Accent
+};
+```
+
+3.  **Draft the UI Vector Path:** In getIconByType(), append a case block defining your custom vector inside the 16x16 frame setup:
+
+```typescript
+case "yourNewToken":
+  return `<svg ${svgStyle}><path d="M2 2h12v12H2z"/></svg>`;
+
+```
+
+4.  **Hook Into the Parsing Stream:** Update lezerParser.ts to identify the syntax tag name delivered by the underlying language package dialect, instructing the path generator to push your newly compiled token.
+
+## 📦 Compilation & Build Pipeline
+
+Ensure you have Node.js installed inside your development setup.
+
+1.  **Clone the Repository:**
 
 ```bash
 git clone https://github.com/CodeNoKami/acode-breadcrumbs.git
@@ -77,30 +138,25 @@ cd acode-breadcrumbs
 
 ```
 
-2.  **Install dependencies:**
+2.  **Initialize Dependencies:**
 
 ```bash
 npm install
 
 ```
 
-3.  **Compile and Bundle:**
+3.  **Execute Production Bundling:**
 
 ```bash
 npm run build
 
 ```
 
-4.  **Output:** The compiled production ZIP bundle will be generated inside your root project directory, fully compressed and optimized, ready to be imported straight into Acode.
+4.  **Deployment:** The pipeline leverages Esbuild to resolve TypeScript modules, outputting a lightweight production ZIP archive to your root workspace folder. Import this package directly into Acode's local plugin manager.
 
-## 🛠️ Tech Stack & Configuration
+## 📄 Core Technical Stack
 
-- **Version:** v2.5.0 (Fully Customizable Palette & Preferences Release)
-- **Language:** TypeScript 5+ (Strict Type Checking)
-- **Parser Core:** CodeMirror 6 Lezer JavaScript/TypeScript Dialect Tree
-- **Framework Integration:** Acode Extension Lifecycle API
-- **Bundler:** Esbuild / Custom lightweight bundling pipelines
-
-## 📄 License
-
-MIT License. Feel free to fork, customize, and extend! Created with 💻 by CodeNoKami.
+- **Engine Target:** TypeScript 5.x+ Execution Core
+- **Parsing Backend:** CodeMirror 6 Lezer Syntactic Traversal Tree
+- **Platform Target:** Acode Mobile Extensibility Ecosystem
+- **License Model:** Open-source MIT Certification Rules. Created with 💻 by CodeNoKami.

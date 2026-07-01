@@ -1,3 +1,20 @@
+## [2.6.0] - 2026-07-02
+
+### Added
+
+- **Control-Flow AST Restoration & Re-Engineering:** Re-introduced granular execution-path tracking within the Lezer AST parsing pipeline (`lezerParser.ts` and `main.ts`) after the structural optimization pass in v2.4.0. It now natively resolves three new core architectural tokens:
+  - `conditional`: Isolates logical branching boundaries (`if`, `else`, `switch`).
+  - `looping`: Tracks cyclic statements (`for`, `while`, `do-while`).
+  - `tcf`: Explicitly maps defensive exception-handling wrappers (`try`, `catch`, `finally`).
+- **Premium Semantic Vector Iconography Suite:** Injected custom-tailored 16x16 vector SVG paths within `patterns.ts` designed with balanced geometric stroke configurations to offer immediate visual context:
+  - Flowchart Decision Diamond for conditionals.
+  - Clockwise Iteration Progress Arc for looping nodes.
+  - High-fidelity Defensive Shield for try-catch-finally safeguards.
+
+### Changed
+
+- **Balanced Scope Aggregation Engine:** Refactored the AST traversal depth mechanics to prevent the layout clutter that motivated the v2.4.0 cleanup. Control-flow scopes are now dynamically compressed and evaluated contextually, providing deep code structural insights while maintaining a pristine, distraction-free desktop-grade workspace footprint.
+
 ## [2.5.0] - 2026-07-01
 
 ### Added

@@ -1,6 +1,6 @@
 import { PLUGIN_ID } from "./configs/constant";
 import { EditorView } from "@codemirror/view";
-import { syntaxTree, ensureSyntaxTree } from "@codemirror/language"; // 🌟 Added ensureSyntaxTree for safety
+import { syntaxTree, ensureSyntaxTree } from "@codemirror/language";
 import { parser as jsParser } from "@lezer/javascript";
 import { highlightCode, classHighlighter } from "@lezer/highlight";
 import { resolveBreadcrumbs, ScopeBlock } from "./utils/lezerParser";
@@ -26,12 +26,12 @@ export class BreadcrumbsPlugin {
 
   // --- Optimization State Caches ---
   private lastDocString: string = "";
-  private lastPos: number = -1; // 🌟 Track last position for aggressive early return
+  private lastPos: number = -1; // Track last position for aggressive early return
   private lastScopesFingerprint: string = "";
   private activePopupCleanup: (() => void) | null = null;
   private blockClickBypass: boolean = false;
 
-  // 🌟 Setting တွင် အရောင်ပြောင်းလိုက်ပါက UI ချက်ချင်း update ဖြစ်စေရန် cache ရှင်းပေးမည့် method
+  //  Setting တွင် အရောင်ပြောင်းလိုက်ပါက UI ချက်ချင်း update ဖြစ်စေရန် cache ရှင်းပေးမည့် method
   public clearCache(): void {
     this.lastDocString = "";
     this.lastPos = -1;
@@ -71,11 +71,16 @@ export class BreadcrumbsPlugin {
     return null;
   }
 
-  // 🌟 Node မျိုးအစားအလိုက် တောင်းဆိုထားသော Custom Color များကို ခွဲခြားသတ်မှတ်ပေးမည့် Helper
+  //  Node မျိုးအစားအလိုက် တောင်းဆိုထားသော Custom Color များကို ခွဲခြားသတ်မှတ်ပေးမည့် Helper
   private getCustomColor(type: string): string {
     const settings: any = acode.require("settings");
     const state = settings.value[PLUGIN_ID] || {};
     const lowerType = type ? type.toLowerCase() : "";
+
+    //  Structural Features Dynamic Theme Matching
+    if (lowerType === "conditional") return state.colorConditional || "#f59e0b";
+    if (lowerType === "looping") return state.colorLooping || "#3b82f6";
+    if (lowerType === "tcf") return state.colorTcf || "#a855f7";
 
     if (lowerType.includes("method"))
       return state.colorMethod || getColorByType(type);
@@ -118,8 +123,14 @@ export class BreadcrumbsPlugin {
       settings.value[PLUGIN_ID] = {
         showIcons: true,
         disablePreviewPopup: false,
+        renderConditional: false,
+        renderLooping: false,
+        renderTcf: false,
         previewDelay: "480",
         pollingDebounceTimeout: "150",
+        colorConditional: "#f59e0b",
+        colorLooping: "#3b82f6",
+        colorTcf: "#a855f7",
         colorClass: "#FFB834",
         colorInterface: "#46D9FF",
         colorType: "#10E5FA",
@@ -139,8 +150,15 @@ export class BreadcrumbsPlugin {
       const state = settings.value[PLUGIN_ID];
       if (state.disablePreviewPopup === undefined)
         state.disablePreviewPopup = false;
+      if (state.renderConditional === undefined) state.renderConditional = true;
+      if (state.renderLooping === undefined) state.renderLooping = true;
+      if (state.renderTcf === undefined) state.renderTcf = true;
       if (state.pollingDebounceTimeout === undefined)
         state.pollingDebounceTimeout = "150";
+      if (state.colorConditional === undefined)
+        state.colorConditional = "#f59e0b";
+      if (state.colorLooping === undefined) state.colorLooping = "#3b82f6";
+      if (state.colorTcf === undefined) state.colorTcf = "#a855f7";
       if (state.colorClass === undefined) state.colorClass = "#FFB834";
       if (state.colorInterface === undefined) state.colorInterface = "#46D9FF";
       if (state.colorType === undefined) state.colorType = "#10E5FA";
@@ -614,8 +632,9 @@ export class BreadcrumbsPlugin {
       popup.style.height = `${Math.max(100, startHeight + deltaY)}px`;
     };
 
+    const onTouchMoveResize_1 = onTouchMoveResize;
     const onTouchEndResize = () => {
-      document.removeEventListener("touchmove", onTouchMoveResize);
+      document.removeEventListener("touchmove", onTouchMoveResize_1);
       document.removeEventListener("touchend", onTouchEndResize);
     };
     resizeHandle.addEventListener("touchstart", onTouchStartResize, {
@@ -635,9 +654,9 @@ export class BreadcrumbsPlugin {
       document.removeEventListener("mousedown", handleOutsideClick);
       resizeHandle.removeEventListener("touchstart", onTouchStartResize);
 
-      // 🌟 Fix A (Critical Cleanup): Explicitly detach global touchmove/touchend when dismissing
+      // Explicitly detach global touchmove/touchend when dismissing
       // Prevents leaked listeners on 'document' if popup is closed during an active resize gesture
-      document.removeEventListener("touchmove", onTouchMoveResize);
+      document.removeEventListener("touchmove", onTouchMoveResize_1);
       document.removeEventListener("touchend", onTouchEndResize);
 
       this.activePopupCleanup = null;
@@ -718,14 +737,14 @@ export class BreadcrumbsPlugin {
     const pos = state.selection.main.head;
     const fullCode = state.doc.toString();
 
-    // 🌟 Fix 1 (Critical Performance): High-Efficiency Early Return
+    // High-Efficiency Early Return
     // Instantly aborts heavy processing if neither document content nor cursor offset shifted,
     // avoiding unnecessary `ensureSyntaxTree` or manual parsing on every debounce tick.
     if (fullCode === this.lastDocString && pos === this.lastPos) {
       return;
     }
 
-    // 🌟 Fix 1 (Architecture): Reflection-based native Tree extraction (or manual fallback)
+    // Reflection-based native Tree extraction (or manual fallback)
     const nativeTree = this.getNativeTree(state);
     let finalTree = nativeTree;
 
@@ -737,7 +756,7 @@ export class BreadcrumbsPlugin {
       else if (filename.endsWith(".ts")) dialect = "ts";
       else if (filename.endsWith(".jsx")) dialect = "jsx";
 
-      // 🌟 Safety fallback: If reflection failed, try forcing a parse using ensureSyntaxTree
+      // If reflection failed, try forcing a parse using ensureSyntaxTree
       // This bridges the GAP safely without the Instance Hazard on standard CM6 syntax extensions.
       const fallbackTree = ensureSyntaxTree(state, state.doc.length, 3000);
 
@@ -751,7 +770,24 @@ export class BreadcrumbsPlugin {
     }
 
     // Call optimized lezerParser signature
-    const validScopes = resolveBreadcrumbs(finalTree, fullCode, pos);
+    let validScopes = resolveBreadcrumbs(finalTree, fullCode, pos);
+
+    // Filters scopes based on User Config Switches
+    const settings: any = acode.require("settings");
+    const pluginSettings = settings.value[PLUGIN_ID] || {};
+
+    validScopes = validScopes.filter((block) => {
+      if (
+        block.type === "conditional" &&
+        pluginSettings.renderConditional === false
+      )
+        return false;
+      if (block.type === "looping" && pluginSettings.renderLooping === false)
+        return false;
+      if (block.type === "tcf" && pluginSettings.renderTcf === false)
+        return false;
+      return true;
+    });
 
     let currentFingerprint = "";
     for (let i = 0; i < validScopes.length; i++) {
@@ -773,8 +809,6 @@ export class BreadcrumbsPlugin {
       pathEl.removeChild(pathEl.firstChild);
     }
 
-    const settings: any = acode.require("settings");
-    const pluginSettings = settings.value[PLUGIN_ID] || {};
     const showIcons = pluginSettings.showIcons !== false;
 
     if (validScopes.length === 0) {
@@ -905,7 +939,7 @@ export class BreadcrumbsPlugin {
   }
 }
 
-// Full 12 Node Types Prompt UI Mapping Сonfiguration
+// Full 15 Node Types Prompt UI Mapping Configuration
 const breadcrumbsSettings = {
   get list() {
     const settings = acode.require("settings");
@@ -922,6 +956,25 @@ const breadcrumbsSettings = {
         text: "Disable Preview Popup",
         info: "Turn off the code preview card popup when long-pressing structural tokens.",
         checkbox: !!pluginState.disablePreviewPopup,
+      },
+      // New Block Segment Control Switches (On/Off)
+      {
+        key: "renderConditional",
+        text: "Render Conditional Blocks",
+        info: "Show conditionals (if, else if, else, switch) in the breadcrumbs trail.",
+        checkbox: pluginState.renderConditional !== false,
+      },
+      {
+        key: "renderLooping",
+        text: "Render Looping Blocks",
+        info: "Show structural loops (for, for-in, for-of, while, do) in the breadcrumbs trail.",
+        checkbox: pluginState.renderLooping !== false,
+      },
+      {
+        key: "renderTcf",
+        text: "Render Try-Catch Blocks",
+        info: "Show error handling constructs (try, catch, finally) in the breadcrumbs trail.",
+        checkbox: pluginState.renderTcf !== false,
       },
       {
         key: "previewDelay",
@@ -946,7 +999,33 @@ const breadcrumbsSettings = {
           ["400", "Eco Battery Saver (400ms)"],
         ],
       },
-      // 🌟 တောင်းဆိုထားသော Custom Highlighting Key (၁၂) မျိုးလုံး၏ Prompt Panel များ
+      {
+        key: "colorConditional",
+        text: "Conditional Block Color",
+        info: "Set structural highlighting hex code for Conditions (if / switch).",
+        value: pluginState.colorConditional || "#d68600",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#d68600",
+      },
+      {
+        key: "colorLooping",
+        text: "Looping Block Color",
+        info: "Set structural highlighting hex code for Loop Statements.",
+        value: pluginState.colorLooping || "#52ff72",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#52ff72",
+      },
+      {
+        key: "colorTcf",
+        text: "Try-Catch-Finally Color",
+        info: "Set structural highlighting hex code for Try / Catch / Finally blocks.",
+        value: pluginState.colorTcf || "#fa3b49",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#fa3b49",
+      },
       {
         key: "colorClass",
         text: "Class Block Color",
