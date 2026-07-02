@@ -3,12 +3,15 @@ import { SyntaxNode, Tree } from "@lezer/common";
 export interface ScopeBlock {
   id: string;
   name: string;
-  type: string; // "conditional" | "looping" | "tcf" | "event" | "function" | "class" | etc.
+  type: string; // class, interface, type, enum, function, method, jsx, object, array, property, variable, control-flow, looping, tcf, method-chain, listener
   from: number;
   to: number;
   line: number;
 }
 
+/**
+ * Maps Lezer AST core nodes directly to the Breadcrumbs Premium Neon Scopes
+ */
 export function getScopeType(nodeType: string): string | null {
   switch (nodeType) {
     case "ClassDeclaration":
@@ -24,35 +27,35 @@ export function getScopeType(nodeType: string): string | null {
     case "FunctionExpression":
       return "function";
     case "MethodDeclaration":
-    case "MethodType":
       return "method";
     case "JSXElement":
+    case "JSXSelfClosingTag":
       return "jsx";
     case "ObjectExpression":
       return "object";
     case "ArrayExpression":
       return "array";
     case "Property":
-    case "PropertyDeclaration":
+    case "PropertyDefinition":
+    case "FieldDeclaration":
       return "property";
     case "VariableDeclaration":
     case "AssignmentExpression":
       return "variable";
 
-    // Conditionals
+    // Premium UI Control Flow (Decision Diamond Shape)
     case "IfStatement":
     case "SwitchStatement":
+    case "ConditionalExpression": // Ternary operators (? :)
       return "conditional";
 
-    // Loopings
-    case "ForStatement":
-    case "ForInStatement":
-    case "ForOfStatement":
+    // Premium UI Looping (Circular Rotation Arrow Shape)
+    case "ForStatement": // Lezer standardizes all loops (for, for-in, for-of) here
     case "WhileStatement":
     case "DoStatement":
       return "looping";
 
-    // Try-Catch-Finally (TCF)
+    // Try-Catch-Finally Blocks
     case "TryStatement":
     case "CatchClause":
     case "FinallyClause":
@@ -249,7 +252,82 @@ export function resolveBreadcrumbs(
         continue;
       }
 
-      // Block Tier 0.5: Control Flow Structures (conditional, looping, tcf)
+      // 1. ADVANCED CONTEXTUAL SCOPE PROCESSING (Listeners & Method Chains)
+      if (nodeType === "CallExpression") {
+        const callee = currentNode.firstChild;
+        if (callee && callee.name === "MemberExpression") {
+          const propNode =
+            callee.getChild("PropertyName") || callee.getChild("Identifier");
+          if (propNode) {
+            const methodName = code.slice(propNode.from, propNode.to).trim();
+            const listenerHooks = [
+              "addEventListener",
+              "on",
+              "off",
+              "once",
+              "subscribe",
+              "watch",
+            ];
+
+            // A: Listener Detection
+            if (listenerHooks.includes(methodName)) {
+              let eventType = "";
+              const argList = currentNode.getChild("ArgList");
+              if (argList) {
+                let firstArg = argList.firstChild;
+                if (firstArg && firstArg.name === "(")
+                  firstArg = firstArg.nextSibling;
+                if (
+                  firstArg &&
+                  (firstArg.name === "String" || firstArg.name === "Literal")
+                ) {
+                  eventType = code
+                    .slice(firstArg.from, firstArg.to)
+                    .trim()
+                    .replace(/^['"`]|[ '"`]$/g, "");
+                }
+              }
+              const callerPrefix =
+                getCleanCallerName(callee.firstChild, code) || "";
+              const displayName = eventType
+                ? `${callerPrefix ? callerPrefix + "." : ""}${methodName}("${eventType}")`
+                : `${callerPrefix ? callerPrefix + "." : ""}${methodName}()`;
+
+              scopes.unshift({
+                id: `listener-${currentNode.from}`,
+                name: displayName,
+                type: "listener",
+                from: currentNode.from,
+                to: currentNode.to,
+                line: 0,
+              });
+              processedNodes.add(nodeKey);
+              currentNode = currentNode.parent;
+              continue;
+            }
+
+            // B: Fluid Cascading Method Chain Detection (Preventing Duplications)
+            if (
+              callee.firstChild &&
+              callee.firstChild.name === "CallExpression"
+            ) {
+              scopes.unshift({
+                id: `method-chain-${currentNode.from}`,
+                name: `${methodName}()`,
+                type: "method-chain",
+                from: currentNode.from,
+                to: currentNode.to,
+                line: 0,
+              });
+              processedNodes.add(nodeKey);
+              currentNode = currentNode.parent;
+              continue;
+            }
+          }
+        }
+      }
+
+      // 2. BLOCK TIER: Control Flow & Loops (The Lezer Ghost Node Fix)
       if (
         mappedType &&
         ["conditional", "looping", "tcf"].includes(mappedType)
@@ -269,7 +347,6 @@ export function resolveBreadcrumbs(
               alternateNode = alternateNode.nextSibling;
             }
             if (alternateNode && alternateNode.name === "IfStatement") {
-              // It's an "else if" block -> let the inner child node handle the naming
               currentNode = currentNode.parent;
               continue;
             } else {
@@ -287,15 +364,14 @@ export function resolveBreadcrumbs(
             }
           }
         } else if (nodeType === "SwitchStatement") label = "switch";
-        else if (nodeType === "ForStatement") label = "for";
-        else if (nodeType === "ForInStatement") label = "for-in";
-        else if (nodeType === "ForOfStatement") label = "for-of";
         else if (nodeType === "WhileStatement") label = "while";
         else if (nodeType === "DoStatement") label = "do-while";
-        else if (nodeType === "TryStatement") {
+        else if (nodeType === "ForStatement") {
+          if (currentNode.getChild("ForInSpec")) label = "for-in";
+          else if (currentNode.getChild("ForOfSpec")) label = "for-of";
+          else label = "for";
+        } else if (nodeType === "TryStatement") {
           label = "try";
-          // If the cursor is currently inside a catch or finally block companion branch,
-          // do not append "try" as an artificial parent container layer.
           let checkChild = currentNode.firstChild;
           let isCursorInTcfSibling = false;
           while (checkChild) {
@@ -331,54 +407,9 @@ export function resolveBreadcrumbs(
           continue;
         }
       }
-      // Block Tier 0.7: Fluid Fluent Event Listeners
-      else if (nodeType === "CallExpression") {
-        const calleeName = getCleanCallerName(currentNode.firstChild, code);
-        if (
-          calleeName &&
-          (calleeName.endsWith("addEventListener") ||
-            calleeName.endsWith("removeEventListener"))
-        ) {
-          const isAdd = calleeName.endsWith("addEventListener");
-          const methodName = isAdd ? "addEventListener" : "removeEventListener";
 
-          const prefixIndex = calleeName.lastIndexOf(methodName);
-          const callerPrefix =
-            prefixIndex > 0 ? calleeName.slice(0, prefixIndex) : "";
-
-          let eventType = "";
-          const argList = currentNode.getChild("ArgList");
-          if (argList) {
-            let firstArg = argList.firstChild;
-            if (firstArg && firstArg.name === "(") {
-              firstArg = firstArg.nextSibling;
-            }
-            if (
-              firstArg &&
-              (firstArg.name === "String" || firstArg.name === "Literal")
-            ) {
-              const rawStr = code.slice(firstArg.from, firstArg.to).trim();
-              eventType = rawStr.replace(/^['"`]|[ '"`]$/g, "");
-            }
-          }
-
-          const displayName = eventType
-            ? `${callerPrefix}${methodName}("${eventType}")`
-            : calleeName;
-
-          scopes.unshift({
-            id: `event-${currentNode.from}`,
-            name: displayName,
-            type: "event",
-            from: currentNode.from,
-            to: currentNode.to,
-            line: 0,
-          });
-          processedNodes.add(nodeKey);
-        }
-      }
-      // Block Tier 1: Anonymous Data Sets & Callbacks
-      else if (
+      // 3. ANONYMOUS DATA SETS & CALLBACKS CLOSURES
+      if (
         [
           "ObjectExpression",
           "ArrayExpression",
@@ -415,11 +446,98 @@ export function resolveBreadcrumbs(
         }
 
         const parent = currentNode.parent;
+
+        // --- FIXED: ADVANCED METHOD CHAIN RECURSIVE ANCHOR SEARCH ---
+        if (parent && parent.name === "ArgList") {
+          let topAnchor: SyntaxNode | null = parent.parent; // Current CallExpression
+          let firstCallee: SyntaxNode | null = null;
+
+          // Climb up through the entire fluent chain layers to find the top-most CallExpression
+          while (topAnchor && topAnchor.parent) {
+            const pName = topAnchor.parent.name;
+            if (
+              pName === "MemberExpression" ||
+              pName === "CallExpression" ||
+              pName === "ArgList"
+            ) {
+              topAnchor = topAnchor.parent;
+            } else {
+              break;
+            }
+          }
+
+          // Chain ရဲ့ အစပြုရာ Root Object (ဥပမာ- transactions) ကို အောက်ဆုံးထိ ပြန်ဆင်းရှာမယ်
+          if (topAnchor && topAnchor.name === "CallExpression") {
+            let baseNode: SyntaxNode | null = topAnchor;
+            while (baseNode && baseNode.name === "CallExpression") {
+              const callee: any = baseNode.firstChild;
+              if (callee && callee.name === "MemberExpression") {
+                baseNode = callee.firstChild; // Member expression ရဲ့ ဘယ်ဘက်ခြမ်းကို ဖမ်းမယ်
+              } else {
+                baseNode = callee;
+                break;
+              }
+            }
+            firstCallee = baseNode;
+          }
+
+          if (topAnchor) {
+            // Variable name အစား စတင်ခေါ်ယူတဲ့ Object/Array နာမည်ကို တိုက်ရိုက်ရယူမယ်
+            let rootName = firstCallee
+              ? getCleanCallerName(firstCallee, code)
+              : null;
+
+            // Extract the direct method identity handling this specific callback (e.g., map, filter)
+            const currentCall = parent.parent;
+            let currentMethodName = "";
+            if (currentCall && currentCall.name === "CallExpression") {
+              const memExpr = currentCall.getChild("MemberExpression");
+              const propNode =
+                memExpr?.getChild("PropertyName") ||
+                memExpr?.getChild("Identifier");
+              if (propNode) {
+                currentMethodName = code
+                  .slice(propNode.from, propNode.to)
+                  .trim();
+              }
+            }
+
+            if (rootName && currentMethodName) {
+              nodeName = `${rootName}.${currentMethodName}() cb`;
+            } else if (currentMethodName) {
+              nodeName = `${currentMethodName}() cb`;
+            }
+
+            if (nodeName) {
+              scopes.unshift({
+                id: `callback-${currentNode.from}`,
+                name: nodeName,
+                type: "function",
+                from: currentNode.from,
+                to: currentNode.to,
+                line: 0,
+              });
+
+              // Register and blacklist all middle redundant call expression nodes from inflating the trail
+              let jumpNode: SyntaxNode | null = currentNode.parent;
+              while (jumpNode && jumpNode.from >= topAnchor.from) {
+                processedNodes.add(`${jumpNode.from}-${jumpNode.name}`);
+                jumpNode = jumpNode.parent;
+              }
+
+              processedNodes.add(nodeKey);
+              currentNode = topAnchor.parent || currentNode.parent;
+              continue;
+            }
+          }
+        }
+        // --- END FIXED METHOD CHAIN JUMPER ---
+
         if (
           parent &&
           (parent.name === "VariableDeclaration" ||
             parent.name === "Property" ||
-            parent.name === "PropertyDeclaration" ||
+            parent.name === "PropertyDefinition" ||
             parent.name === "AssignmentExpression")
         ) {
           nodeName =
@@ -444,10 +562,7 @@ export function resolveBreadcrumbs(
               line: 0,
             });
             processedNodes.add(`${parent.from}-${parent.name}`);
-            if (currentNode.parent)
-              processedNodes.add(
-                `${currentNode.parent.from}-${currentNode.parent.name}`,
-              );
+            processedNodes.add(nodeKey);
           }
         }
 
@@ -480,98 +595,25 @@ export function resolveBreadcrumbs(
             nodeType === "ArrowFunction" ||
             nodeType === "FunctionExpression"
           ) {
-            let isStandardCallback = false;
-            let callbackLabel = "<function>";
-            let parentNode = currentNode.parent;
+            let p1 = currentNode.parent;
+            if (p1 && p1.name === "ParenthesizedExpression") p1 = p1.parent;
+            const isAnonymousIIFE = p1 && p1.name === "CallExpression";
 
-            if (parentNode && parentNode.name === "ArgList") {
-              let grandparent = parentNode.parent;
-              if (grandparent && grandparent.name === "CallExpression") {
-                const memberExpr = grandparent.getChild("MemberExpression");
-                if (memberExpr) {
-                  const propNode =
-                    memberExpr.getChild("PropertyName") ||
-                    memberExpr.getChild("Identifier");
-                  if (propNode) {
-                    const methodName = code
-                      .slice(propNode.from, propNode.to)
-                      .trim();
-                    const validCallbacks = [
-                      "filter",
-                      "map",
-                      "reduce",
-                      "forEach",
-                      "then",
-                      "catch",
-                      "finally",
-                      "some",
-                      "every",
-                      "find",
-                      "findIndex",
-                      "flatMap",
-                    ];
-                    if (validCallbacks.includes(methodName)) {
-                      isStandardCallback = true;
-
-                      const leftObj = memberExpr.firstChild;
-                      if (
-                        leftObj &&
-                        (leftObj.name === "VariableName" ||
-                          leftObj.name === "Identifier" ||
-                          leftObj.name === "this")
-                      ) {
-                        const callerName = code
-                          .slice(leftObj.from, leftObj.to)
-                          .trim();
-                        callbackLabel = `${callerName}.${methodName}() callback`;
-                      } else if (
-                        leftObj &&
-                        leftObj.name === "MemberExpression"
-                      ) {
-                        const cleanLeft = getCleanCallerName(leftObj, code);
-                        if (cleanLeft && !cleanLeft.includes("(")) {
-                          callbackLabel = `${cleanLeft}.${methodName}() callback`;
-                        } else {
-                          callbackLabel = `${methodName}() callback`;
-                        }
-                      } else {
-                        callbackLabel = `${methodName}() callback`;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            if (isStandardCallback) {
+            if (!isAnonymousIIFE) {
               scopes.unshift({
-                id: `callback-${currentNode.from}`,
-                name: callbackLabel,
-                type: typeOverride,
+                id: `${typeOverride}-${currentNode.from}`,
+                name: "&lt;cb function&gt;",
+                type: "function",
                 from: currentNode.from,
                 to: currentNode.to,
                 line: 0,
               });
-            } else {
-              let p1 = currentNode.parent;
-              if (p1 && p1.name === "ParenthesizedExpression") p1 = p1.parent;
-              const isAnonymousIIFE = p1 && p1.name === "CallExpression";
-
-              if (!isAnonymousIIFE) {
-                scopes.unshift({
-                  id: `${typeOverride}-${currentNode.from}`,
-                  name: "&lt;cb function&gt;",
-                  type: "arrow",
-                  from: currentNode.from,
-                  to: currentNode.to,
-                  line: 0,
-                });
-              }
             }
           }
         }
       }
-      // Block Tier 2: Structural Object-Oriented Signatures
+
+      // 4. MAIN STRUCTURAL OBJECT-ORIENTED SIGNATURES
       else if (mappedType) {
         let nodeName: string | null = null;
         if (
@@ -581,12 +623,7 @@ export function resolveBreadcrumbs(
         ) {
           nodeName = getIdentifierName(currentNode, code);
 
-          if (
-            nodeName &&
-            (nodeType === "MethodDeclaration" ||
-              nodeType === "Property" ||
-              nodeType === "PropertyDeclaration")
-          ) {
+          if (nodeName && nodeType === "MethodDeclaration") {
             let child = currentNode.firstChild;
             while (child) {
               if (directNameTokens.includes(child.name)) {
@@ -620,17 +657,14 @@ export function resolveBreadcrumbs(
           }
         } else if (
           nodeType === "Property" ||
-          nodeType === "PropertyDeclaration"
+          nodeType === "PropertyDefinition"
         ) {
           nodeName = getIdentifierName(currentNode, code);
           if (nodeName) {
             let child = currentNode.firstChild;
             while (child) {
-              if (directNameTokens.includes(child.name)) {
-                const prefixText = code.slice(currentNode.from, child.from);
-                if (/\bget\b/.test(prefixText)) nodeName = `(get) ${nodeName}`;
-                else if (/\bset\b/.test(prefixText))
-                  nodeName = `(set) ${nodeName}`;
+              if (child.name === "get" || child.name === "set") {
+                nodeName = `(${child.name}) ${nodeName}`;
                 break;
               }
               child = child.nextSibling;
@@ -650,8 +684,8 @@ export function resolveBreadcrumbs(
           }
         } else if (mappedType === "jsx") {
           nodeName = getJSXTagName(currentNode, code, cursorPos);
-          if (nodeName && !/^[A-Z]/.test(nodeName)) {
-            nodeName = null;
+          if (nodeName && !/^[A-Z]/.test(nodeName.split(".")[0])) {
+            nodeName = null; // Filters native lower-cased tags out (e.g. div, sections)
           }
         }
 
@@ -659,7 +693,7 @@ export function resolveBreadcrumbs(
           nodeName &&
           ![
             "Property",
-            "PropertyDeclaration",
+            "PropertyDefinition",
             "VariableDeclaration",
             "AssignmentExpression",
           ].includes(nodeType)
@@ -674,10 +708,11 @@ export function resolveBreadcrumbs(
           });
         }
       }
+
       currentNode = currentNode.parent;
     }
 
-    // Line Number Index Resolver Block
+    // 5. OPTIMIZED OFFSET-TO-LINE RESOLVER (BINARY SEARCH)
     if (scopes.length > 0) {
       const lineStarts: number[] = [0];
       const codeLen = code.length;
@@ -691,24 +726,25 @@ export function resolveBreadcrumbs(
         const targetOffset = scopes[i].from;
         let low = 0;
         let high = lineStarts.length - 1;
+        let lineNum = 1;
 
         while (low <= high) {
           const mid = (low + high) >> 1;
-          if (lineStarts[mid] === targetOffset) {
-            low = mid + 1;
-            break;
-          } else if (lineStarts[mid] < targetOffset) {
+          if (lineStarts[mid] <= targetOffset) {
+            lineNum = mid + 1;
             low = mid + 1;
           } else {
             high = mid - 1;
           }
         }
-        scopes[i].line = low;
+        scopes[i].line = lineNum;
       }
     }
   } catch (err) {
-    console.error("Breadcrumbs Error:", err);
+    console.error("Acode Breadcrumbs Core Parser Error:", err);
   }
+
+  console.log(scopes);
 
   return scopes;
 }
