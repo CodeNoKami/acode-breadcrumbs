@@ -16,9 +16,9 @@ export type ScopeType =
   | "array"
   | "variable"
   | "jsx"
-  | "conditional" // 🌟 Added: Control Flow Conditionals (if, switch)
-  | "looping" // 🌟 Added: Control Flow Loops (for, while)
-  | "tcf"; // 🌟 Added: Error Handling Safety Blocks (try-catch-finally)
+  | "conditional"
+  | "looping"
+  | "tcf";
 
 declare var acode: any;
 
