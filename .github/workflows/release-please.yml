@@ -3,7 +3,7 @@ name: release-please
 on:
   push:
     branches:
-      - master 
+      - master
 
 permissions:
   contents: write
@@ -53,12 +53,12 @@ jobs:
       - name: Build Plugin
         run: npm run build
 
-      # Acode အတွက် တကယ့် လိုအပ်တဲ့ ဖိုင်တွေကိုပဲ စုပြီး zip ပတ်တာ
+      # ကို Lumen ရဲ့ စက်ထဲက Script အတိုင်း 100% ကွက်တိ တူအောင် လှမ်း Run တာ
       - name: Zip Plugin Archetype
-        run: zip -r breadcrumbs-plugin.zip plugin.json dist/ icon.png readme.md
+        run: node .vscode/pack-zip.js
 
-      # GitHub Release အောက်မှာ zip ဖိုင်ကို Auto သွားချိတ်ပေးတာ
+      # ထွက်လာတဲ့ dist.zip ကို GitHub Release ပေါ် တင်မယ်
       - name: Upload Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ needs.release-please.outputs.tag_name }} breadcrumbs-plugin.zip
+        run: gh release upload ${{ needs.release-please.outputs.tag_name }} dist.zip
