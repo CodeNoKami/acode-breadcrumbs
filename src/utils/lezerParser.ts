@@ -744,7 +744,5 @@ export function resolveBreadcrumbs(
     console.error("Acode Breadcrumbs Core Parser Error:", err);
   }
 
-  console.log(scopes);
-
   return scopes;
 }
