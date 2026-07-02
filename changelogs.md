@@ -15,6 +15,18 @@
 
 - **Balanced Scope Aggregation Engine:** Refactored the AST traversal depth mechanics to prevent the layout clutter that motivated the v2.4.0 cleanup. Control-flow scopes are now dynamically compressed and evaluated contextually, providing deep code structural insights while maintaining a pristine, distraction-free desktop-grade workspace footprint.
 
+## [2.7.0](https://github.com/CodeNoKami/acode-breadcrumbs/compare/breadcrumbs-plugin-v2.6.2...breadcrumbs-plugin-v2.7.0) (2026-07-02)
+
+
+### Features
+
+* upgrade anonymous scope mapping and filter jsx event handlers (v2.1.0) ([dfb005d](https://github.com/CodeNoKami/acode-breadcrumbs/commit/dfb005d02def47260905df79d53ccbc8a12a4e08))
+
+
+### Bug Fixes
+
+* fixed some errors in capturing scopes. ([898e539](https://github.com/CodeNoKami/acode-breadcrumbs/commit/898e5395f9ef3ee9472c7783a8784e3e05ed05cd))
+
 ## [2.5.0] - 2026-07-01
 
 ### Added
