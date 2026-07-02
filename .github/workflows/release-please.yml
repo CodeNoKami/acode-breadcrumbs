@@ -1,0 +1,64 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - master 
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build-and-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # package.json ထဲက ဗားရှင်းအသစ်ကို plugin.json ထဲ Auto ထည့်ပေးတာ
+      - name: Sync version to plugin.json
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          node -e "
+            const fs = require('fs');
+            const plugin = require('./plugin.json');
+            plugin.version = '$VERSION';
+            fs.writeFileSync('./plugin.json', JSON.stringify(plugin, null, 2));
+          "
+
+      # esbuild နဲ့ build ဆောက်တာ (dist folder ထွက်လာမယ်)
+      - name: Build Plugin
+        run: npm run build
+
+      # Acode အတွက် တကယ့် လိုအပ်တဲ့ ဖိုင်တွေကိုပဲ စုပြီး zip ပတ်တာ
+      - name: Zip Plugin Archetype
+        run: zip -r breadcrumbs-plugin.zip plugin.json dist/ icon.png readme.md
+
+      # GitHub Release အောက်မှာ zip ဖိုင်ကို Auto သွားချိတ်ပေးတာ
+      - name: Upload Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ needs.release-please.outputs.tag_name }} breadcrumbs-plugin.zip
