@@ -310,14 +310,14 @@ All vector icons are rendered via optimized 16x16 viewport inline SVGs with stan
   </div>
 
   <!-- Looping Scope -->
-  <div style="background-color: #52ff72; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+  <div style="background-color: #fa35ed; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
     <div style="display: flex; align-items: center; gap: 12px;">
       <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#52ff72" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9L14 6.5"/><path d="M14 2.5v4h-4"/></svg>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fa35ed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9L14 6.5"/><path d="M14 2.5v4h-4"/></svg>
       </div>
       <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">looping</strong> <small style="color: rgba(0,0,0,0.6);">[v2.6.0]</small> — Cyclic Iteration Nodes (for, while, do-while)</span>
     </div>
-    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#52ff72</span>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#fa35ed</span>
   </div>
 
   <!-- TCF Scope -->
