@@ -16,14 +16,72 @@
 
 ---
 
-A high-performance, theme-adaptive, desktop-grade **VS Code-style Breadcrumbs Navigation Bar** engineered specifically for the Acode Editor.
-This plugin brings deep architectural visibility and fluid source code navigation to mobile viewports. Powered by a lightweight, real-time **Lezer AST Parsing Engine**, it dynamically maps structural syntax definitions into an interactive hierarchy directly above your active viewport.
+<!-- Description Card (HTML/CSS Styled Container) -->
+<div style="background-color: #161b22; border-left: 4px solid #b39ddb; padding: 15px; border-radius: 6px; margin: 20px 0;">
+  <p style="line-height: 1.6; font-size: 15px; color: #c9d1d9; margin: 0;">
+    A high-performance, theme-adaptive, desktop-grade <strong style="color: #b39ddb;">VS Code-style Breadcrumbs Navigation Bar</strong> engineered specifically for the Acode Editor. 
+    This plugin brings deep architectural visibility and fluid source code navigation to mobile viewports. Powered by a lightweight, real-time <strong style="color: #b39ddb;">Lezer AST Parsing Engine</strong>, it dynamically maps structural syntax definitions into an interactive hierarchy directly above your active viewport.
+  </p>
+</div>
 
 ---
 
-## 📸 Previews
+## 📸 <span style="color: #10b981;">Scope Previews</span>
 
-### ⚡ Flawless Nested Scope Tracking & Dynamic Methods `[v2.6.0]`
+<table width="100%">
+  <tr>
+    <td width="50%" align="center"><b>🛡️ Try-Catch-Finally Enclosures</b></td>
+    <td width="50%" align="center"><b>🗂️ Property & Method Chains</b></td>
+  </tr>
+  <tr>
+    <td>
+      <kbd>
+        <img src="https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/scope_preview1.png" alt="Try-Catch Scope Tracking" width="100%" style="border-radius: 6px;" />
+      </kbd>
+    </td>
+    <td>
+      <kbd>
+        <img src="https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/scope_preview2.png" alt="Nested Property Tracking" width="100%" style="border-radius: 6px;" />
+      </kbd>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <i>Real-time structural rendering matching cleanly from active files to deeply nested logical scopes.</i>
+    </td>
+  </tr>
+</table>
+
+## 📸 <span style="color: #10b981;">Fullscreen Popup Previews</span>
+
+<!-- Full Size Multi-Theme Previews Block -->
+<div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin: 16px 0;">
+  
+  <table width="100%" style="border-collapse: collapse; border: none;">
+    <tr>
+      <td width="50%" align="center" style="border: none; padding: 8px;">
+        <b style="color: #c9d1d9; display: block; margin-bottom: 8px;">🌌 Popup Dark Mode Preview</b>
+        <kbd style="display: block; border: 1px solid #21262d; padding: 4px; background-color: #161b22; border-radius: 8px;">
+          <img src="https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/popup_dark.png" alt="Acode Breadcrumbs Dark Theme Full Preview" width="100%" style="border-radius: 6px; display: block;" />
+        </kbd>
+      </td>
+      <td width="50%" align="center" style="border: none; padding: 8px;">
+        <b style="color: #c9d1d9; display: block; margin-bottom: 8px;">☀️ Popup Light Mode Preview</b>
+        <kbd style="display: block; border: 1px solid #21262d; padding: 4px; background-color: #161b22; border-radius: 8px;">
+          <img src="https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/popup_light.png" alt="Acode Breadcrumbs Light Theme Full Preview" width="100%" style="border-radius: 6px; display: block;" />
+        </kbd>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center" style="border: none; padding-top: 12px;">
+        <i style="color: #8b949e; font-size: 13px;">Real-time structural rendering matching cleanly from active files to deeply nested logical scopes across different canvas luminance.</i>
+      </td>
+    </tr>
+  </table>
+
+</div>
+
+### ⚡ <span style="color: #34d399;">Flawless Nested Scope Tracking & Dynamic Methods `[v2.6.0]`</span>
 
 Real-time structural rendering mapping cleanly from the active filename through classes, methods, context blocks, and loops:
 
@@ -33,7 +91,7 @@ userController.js › 🍇 usersList.filter › 🔶 if
 app.tsx › 🔄 iifeModule › 🛡️ try
 ```
 
-### 💎 TypeScript Type & Data Awareness
+### 💎 <span style="color: #34d399;">TypeScript Type & Data Awareness</span>
 
 Clean UI feedback for advanced TS constraints, Type interfaces, array lists, and variable scopes:
 
@@ -43,18 +101,65 @@ types.ts › 📄 UserRole › 🟢 config_list › 🗂️ properties
 
 ---
 
-## ✨ Features
+## ✨ <span style="color: #10b981;">Features</span>
 
-- **🗂️ VS Code-Parity Path Mapping:** Anchors the active filename as the structural root node before drilling down into the file architecture (`Filename › Scope › Sub-Scope`), matching standard desktop IDE layouts.
-- **🎯 Interactive Offset Navigation:** Every segment rendered on the breadcrumbs bar is a fully clickable target. Tap any scope to instantly jump the editor cursor to the corresponding code block offset and focus the viewport.
-- **🔄 Balanced Scope Aggregation Engine `[v2.6.0]`:** Intelligently balances syntax accuracy with UX sanity. Traverses the AST tree to expose nested loops, conditionals, and error handling without cluttering the screen or overwhelming your mobile viewport layout.
-- **🎨 15-Node High-Contrast Palette Configurator `[v2.6.0]`:** Offers individual Hex text inputs in the settings dashboard for all 15 supported semantic layout structures (including newly added Control Flow blocks).
-- **🔍 Luminance-Aware Theme Adaptivity:** Automatically reads the active editor canvas background luminance. It hooks into computed variables to map syntax colors dynamically to custom Light (GitHub-Light inspired) or Matte Dark (One-Dark/Dracula hybrid) standards seamlessly.
-- **✨ Acrylic Frosted Glass Overlay:** Employs a hardware-accelerated backdrop blur filter underneath long-press structural code previews for an immersive visual experience.
+<!-- Main Card Wrapper -->
+<div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin: 16px 0;">
+  
+  <!-- Card Header -->
+  <div style="border-bottom: 1px solid #21262d; padding-bottom: 12px; margin-bottom: 16px;">
+    <h3 style="margin: 0; color: #10b981; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+      🚀 Key Capabilities & Core Features
+    </h3>
+  </div>
+
+  <!-- Box 1 -->
+  <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
+    <p style="margin: 0; line-height: 1.5; color: #c9d1d9;">
+      <strong style="color: #34d399;">🗂️ VS Code-Parity Path Mapping:</strong> Anchors the active filename as the structural root node before drilling down into the file architecture (<code>Filename › Scope › Sub-Scope</code>), matching standard desktop IDE layouts.
+    </p>
+  </div>
+
+  <!-- Box 2 -->
+  <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
+    <p style="margin: 0; line-height: 1.5; color: #c9d1d9;">
+      <strong style="color: #34d399;">🎯 Interactive Offset Navigation:</strong> Every segment rendered on the breadcrumbs bar is a fully clickable target. Tap any scope to instantly jump the editor cursor to the corresponding code block offset and focus the viewport.
+    </p>
+  </div>
+
+  <!-- Box 3 -->
+  <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
+    <p style="margin: 0; line-height: 1.5; color: #c9d1d9;">
+      <strong style="color: #34d399;">🔄 Balanced Scope Aggregation Engine <code>[v2.6.0]</code>:</strong> Intelligently balances syntax accuracy with UX sanity. Traverses the AST tree to expose nested loops, conditionals, and error handling without cluttering the screen or overwhelming your mobile viewport layout.
+    </p>
+  </div>
+
+  <!-- Box 4 -->
+  <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
+    <p style="margin: 0; line-height: 1.5; color: #c9d1d9;">
+      <strong style="color: #34d399;">🎨 15-Node High-Contrast Palette Configurator <code>[v2.6.0]</code>:</strong> Offers individual Hex text inputs in the settings dashboard for all 15 supported semantic layout structures (including newly added Control Flow blocks).
+    </p>
+  </div>
+
+  <!-- Box 5 -->
+  <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
+    <p style="margin: 0; line-height: 1.5; color: #c9d1d9;">
+      <strong style="color: #34d399;">🔍 Luminance-Aware Theme Adaptivity:</strong> Automatically reads the active editor canvas background luminance. It hooks into computed variables to map syntax colors dynamically to custom Light (GitHub-Light inspired) or Matte Dark (One-Dark/Dracula hybrid) standards seamlessly.
+    </p>
+  </div>
+
+  <!-- Box 6 -->
+  <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 14px;">
+    <p style="margin: 0; line-height: 1.5; color: #c9d1d9;">
+      <strong style="color: #34d399;">✨ Acrylic Frosted Glass Overlay:</strong> Employs a hardware-accelerated backdrop blur filter underneath long-press structural code previews for an immersive visual experience.
+    </p>
+  </div>
+
+</div>
 
 ---
 
-## 🎨 Scope Syntax & Theme Mapping
+## 🎨 <span style="color: #10b981;">Scope Syntax & Theme Mapping</span>
 
 All vector icons are rendered via optimized 16x16 viewport inline SVGs with standard-compliant line weight balancing.
 
@@ -78,7 +183,7 @@ All vector icons are rendered via optimized 16x16 viewport inline SVGs with stan
 
 ---
 
-## 🛠️ Contributor & Architecture Extension Guide
+## 🛠️ <span style="color: #10b981;">Contributor & Architecture Extension Guide</span>
 
 The plugin evaluates structural trees into a single visual state array using a decoupled architectural workflow:
 
@@ -101,14 +206,16 @@ The plugin evaluates structural trees into a single visual state array using a d
 <details>
   <summary>📦 Click to view Project Anatomy Details</summary>
 
-### Project Components
+<br>
+
+### 🟢 <span style="color: #34d399;">Project Components</span>
 
 - `main.ts`: Orchestrates workspace layout injections, window touch event bindings, long-press gestures, preference caching, and DOM updates.
 - `lezerParser.ts`: Evaluates active syntax trees. Contains specific language rules determining if an active tree offset falls under structural declaration categories or helper blocks.
 - `patterns.ts`: Defines the UI/UX components. Holds type structures, default premium styling dictionaries, and custom SVG paths.
 </details>
 
-### Adding New Language Tokens
+### 🟢 <span style="color: #34d399;">Adding New Language Tokens</span>
 
 To register and implement a new syntax block mapping (e.g., adding a database query tag or markdown scope):
 
@@ -118,7 +225,7 @@ To register and implement a new syntax block mapping (e.g., adding a database qu
 export type ScopeType = "class" | "function" | "yourNewToken";
 ```
 
-2. **Assign Core Identity Colors:** Update the fallback color configuration map (DEFAULT_BREADCRUMBS_COLORS):
+2.  **Assign Core Identity Colors:** Update the fallback color configuration map (DEFAULT_BREADCRUMBS_COLORS):
 
 ```typescript
 export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
@@ -132,17 +239,18 @@ export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
 case "yourNewToken":
   return `<svg ${svgStyle}><path d="M2 2h12v12H2z"/></svg>`;
 
+
 ```
 
 4.  **Hook Into the Parsing Stream:** Update lezerParser.ts to identify the syntax tag name delivered by the underlying language package dialect.
 
-## 📦 Compilation & Build Pipeline
+## 📦 <span style="color: #10b981;">Compilation & Build Pipeline</span>
 
 Ensure you have **Node.js** installed inside your development setup.
 
 ```bash
 # 1. Clone the Repository
-git clone https://github.com/CodeNoKami/acode-breadcrumbs.git
+git clone [https://github.com/CodeNoKami/acode-breadcrumbs.git](https://github.com/CodeNoKami/acode-breadcrumbs.git)
 cd acode-breadcrumbs
 
 # 2. Initialize Dependencies
@@ -151,14 +259,15 @@ npm install
 # 3. Execute Production Bundling
 npm run build
 
+
 ```
 
 > 💡 **Deployment Note:** The pipeline leverages Esbuild to resolve TypeScript modules, outputting a lightweight production ZIP archive to your root workspace folder. Import this package directly into Acode's local plugin manager.
 
-## 📄 Core Technical Stack
+## 📄 <span style="color: #10b981;">Core Technical Stack</span>
 
 - **Engine Target:** TypeScript 5.x+ Execution Core
 - **Parsing Backend:** CodeMirror 6 Lezer Syntactic Traversal Tree
 - **Platform Target:** Acode Mobile Extensibility Ecosystem
 - **License Model:** Open-source MIT Certification Rules.
-<p align="center">Created with 💻 by <b>CodeNoKami</b></p>
+<p align="center">Created with 💻 by <b style="color: #b39ddb;">CodeNoKami</b></p>
