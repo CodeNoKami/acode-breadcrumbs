@@ -163,23 +163,186 @@ types.ts › 📄 UserRole › 🟢 config_list › 🗂️ properties
 
 All vector icons are rendered via optimized 16x16 viewport inline SVGs with standard-compliant line weight balancing.
 
-| Token Scope Type           | Vector Concept | Default Palette | Node Type / Abstract Mapping Context                      |
-| :------------------------- | :------------: | :-------------: | :-------------------------------------------------------- |
-| **class**                  |       🔲       |    `#FFB834`    | Object-Oriented Blueprint classes & declarations          |
-| **interface**              |  🔲 (Dashed)   |    `#46D9FF`    | TypeScript Structural Model Contracts                     |
-| **type**                   |       📄       |    `#10E5FA`    | Type Aliases, Union, and Intersection specs               |
-| **enum**                   |       📄       |    `#00F5D4`    | Numeric / String Enumeration definitions                  |
-| **method**                 |       📦       |    `#D694FF`    | Inside Class Functions & Object Constructors              |
-| **function**               |      _𝑓_       |    `#60A5FA`    | Global lexical declarations & functional scopes           |
-| **arrow**                  |       🏹       |    `#34D399`    | Lambda Callbacks, Inline Promises & Anonymous expressions |
-| **property**               |       🗂️       |    `#99E65F`    | Explicit Key/Value mappings inside JSON or literals       |
-| **object**                 |       📦       |    `#6EE7B7`    | Instantiated structural JSON Objects & configurations     |
-| **array**                  |       📊       |    `#FCD34D`    | Iterable Array brackets & assignment signatures           |
-| **variable**               |       🟢       |    `#4ADE80`    | Local mutable/immutable blocks (let, const, var)          |
-| **jsx**                    |       ⚛️       |    `#22D3EE`    | React Components, XML Fragment tags & layout blocks       |
-| **conditional** `[v2.6.0]` |       🔶       |    `#d68600`    | Flowchart Decision Nodes (if, else, switch)               |
-| **looping** `[v2.6.0]`     |       🔄       |    `#52ff72`    | Cyclic Iteration Nodes (for, while, do-while)             |
-| **tcf** `[v2.6.0]`         |       🛡️       |    `#fa3b49`    | Defensive Exception Enclosures (try, catch, finally)      |
+<!-- Main Container for Syntax List -->
+<div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin: 16px 0;">
+
+  <!-- Class Scope -->
+  <div style="background-color: #FFB834; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#FFB834" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2.5"/><circle cx="8" cy="8" r="2"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">class</strong> — Object-Oriented Blueprint classes & declarations</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#FFB834</span>
+  </div>
+
+  <!-- Interface Scope -->
+  <div style="background-color: #46D9FF; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#46D9FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2.5" stroke-dasharray="2 1.5"/><path d="M6 8h4"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">interface</strong> — TypeScript Structural Model Contracts</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#46D9FF</span>
+  </div>
+
+  <!-- Type Scope -->
+  <div style="background-color: #10E5FA; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#10E5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h10M8 4v9M5.5 13h5"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">type</strong> — Type Aliases, Union, and Intersection specs</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#10E5FA</span>
+  </div>
+
+  <!-- Enum Scope -->
+  <div style="background-color: #00F5D4; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#00F5D4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h10M3 8h10M3 12h10M3 4h.01M3 8h.01M3 12h.01"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">enum</strong> — Numeric / String Enumeration definitions</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#00F5D4</span>
+  </div>
+
+  <!-- Method Scope -->
+  <div style="background-color: #D694FF; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#D694FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l5 2.5V11l-5 2.5L3 11V5.5z M8 8v5.5 M8 8L3 5.5 M8 8l5-2.5"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">method</strong> — Inside Class Functions & Object Constructors</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#D694FF</span>
+  </div>
+
+  <!-- Function Scope -->
+  <div style="background-color: #60A5FA; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 13.5c1.2 0 1.8-1 2.2-3.5s.8-6.5 2.8-6.5M3.5 7.5h8"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">function</strong> — Global lexical declarations & functional scopes</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#60A5FA</span>
+  </div>
+
+  <!-- Arrow Scope -->
+  <div style="background-color: #34D399; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">arrow</strong> — Lambda Callbacks, Inline Promises & Anonymous expressions</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#34D399</span>
+  </div>
+
+  <!-- Property Scope -->
+  <div style="background-color: #99E65F; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#99E65F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="11" r="2"/><path d="M6.5 9.5l5.5-5.5M10 3l3 3"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">property</strong> — Explicit Key/Value mappings inside JSON or literals</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#99E65F</span>
+  </div>
+
+  <!-- Object Scope -->
+  <div style="background-color: #6EE7B7; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#6EE7B7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 10h4"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">object</strong> — Instantiated structural JSON Objects & configurations</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#6EE7B7</span>
+  </div>
+
+  <!-- Array Scope -->
+  <div style="background-color: #FCD34D; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#FCD34D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2H2v12h2.5M11.5 2H14v12h-2.5M5.5 8h5"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">array</strong> — Iterable Array brackets & assignment signatures</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#FCD34D</span>
+  </div>
+
+  <!-- Variable Scope -->
+  <div style="background-color: #4ADE80; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#4ADE80" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="2"/><circle cx="6" cy="8" r="1.5"/><path d="M9 8h2"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">variable</strong> — Local mutable/immutable blocks (let, const, var)</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#4ADE80</span>
+  </div>
+
+  <!-- JSX Scope -->
+  <div style="background-color: #22D3EE; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#22D3EE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4L1 8l4 4M11 4l4 4-4 4M9 3L7 13"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">jsx</strong> — React Components, XML Fragment tags & layout blocks</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#22D3EE</span>
+  </div>
+
+  <!-- Conditional Scope -->
+  <div style="background-color: #d68600; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#d68600" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5l5.5 5.5-5.5 5.5-5.5-5.5z"/></svg>
+      </div>
+      <span style="color: #ffffff; font-size: 14px;"><strong style="font-size: 15px;">conditional</strong> <small style="color: rgba(255,255,255,0.7);">[v2.6.0]</small> — Flowchart Decision Nodes (if, else, switch)</span>
+    </div>
+    <span style="color: #ffffff; font-family: monospace; font-size: 12px; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">#d68600</span>
+  </div>
+
+  <!-- Looping Scope -->
+  <div style="background-color: #52ff72; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#52ff72" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9L14 6.5"/><path d="M14 2.5v4h-4"/></svg>
+      </div>
+      <span style="color: #000000; font-size: 14px;"><strong style="font-size: 15px;">looping</strong> <small style="color: rgba(0,0,0,0.6);">[v2.6.0]</small> — Cyclic Iteration Nodes (for, while, do-while)</span>
+    </div>
+    <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#52ff72</span>
+  </div>
+
+  <!-- TCF Scope -->
+  <div style="background-color: #fa3b49; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fa3b49" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 3h9v4.5c0 3.2-2 6-4.5 7-2.5-1-4.5-3.8-4.5-7V3z"/></svg>
+      </div>
+      <span style="color: #ffffff; font-size: 14px;"><strong style="font-size: 15px;">tcf</strong> <small style="color: rgba(255,255,255,0.7);">[v2.6.0]</small> — Defensive Exception Enclosures (try, catch, finally)</span>
+    </div>
+    <span style="color: #ffffff; font-family: monospace; font-size: 12px; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">#fa3b49</span>
+  </div>
+
+  <!-- Listener Scope -->
+  <div style="background-color: #3178C6; border-radius: 6px; padding: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#3178C6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 1.5 L3.5 8.5 H7.5 L5.5 14.5 L12.5 7.5 H8.5 Z"/></svg>
+      </div>
+      <span style="color: #ffffff; font-size: 14px;"><strong style="font-size: 15px;">listener</strong> — Event Listener/Trigger (⚡ Lightning Bolt)</span>
+    </div>
+    <span style="color: #ffffff; font-family: monospace; font-size: 12px; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">#3178C6</span>
+  </div>
+
+</div>
 
 ---
 
