@@ -1,6 +1,6 @@
 import { PLUGIN_ID } from "./configs/constant";
-import { EditorView } from "@codemirror/view";
-import { syntaxTree, ensureSyntaxTree } from "@codemirror/language";
+// 💡 Bundle footprint မရှိစေရန် အသုံးပြုမည့် Type များကိုသာ 'import type' ပြောင်းထားပါသည်
+import type { EditorView } from "@codemirror/view";
 import { parser as jsParser } from "@lezer/javascript";
 import { highlightCode, classHighlighter } from "@lezer/highlight";
 import { resolveBreadcrumbs, ScopeBlock } from "./utils/lezerParser";
@@ -12,6 +12,11 @@ import {
 
 declare var editorManager: any;
 declare var acode: any;
+
+// 💡 Acode core ထဲတွင် ပါဝင်ပြီးသား တူညီသော instance များကို ခေါ်ယူအသုံးပြုခြင်း (Bundle Hazard Fix)
+const cmLanguage = acode.require("@codemirror/language");
+const syntaxTree = cmLanguage.syntaxTree;
+const ensureSyntaxTree = cmLanguage.ensureSyntaxTree;
 
 export class BreadcrumbsPlugin {
   private container: HTMLDivElement | null = null;
@@ -81,6 +86,7 @@ export class BreadcrumbsPlugin {
     if (lowerType === "conditional") return state.colorConditional || "#f59e0b";
     if (lowerType === "looping") return state.colorLooping || "#3b82f6";
     if (lowerType === "tcf") return state.colorTcf || "#a855f7";
+    if (lowerType === "listener") return state.colorListener || "#fa3b81";
 
     if (lowerType.includes("method"))
       return state.colorMethod || getColorByType(type);
@@ -126,6 +132,7 @@ export class BreadcrumbsPlugin {
         renderConditional: false,
         renderLooping: false,
         renderTcf: false,
+        renderListener: false,
         previewDelay: "480",
         pollingDebounceTimeout: "150",
         colorConditional: "#d68600",
@@ -143,6 +150,7 @@ export class BreadcrumbsPlugin {
         colorArray: "#FCD34D",
         colorVariable: "#4ADE80",
         colorJsx: "#22D3EE",
+        colorListener: "#fa3b81",
       };
       settings.update(false);
     } else {
@@ -153,12 +161,14 @@ export class BreadcrumbsPlugin {
       if (state.renderConditional === undefined) state.renderConditional = true;
       if (state.renderLooping === undefined) state.renderLooping = true;
       if (state.renderTcf === undefined) state.renderTcf = true;
+      if (state.renderListener === undefined) state.renderListener = true;
       if (state.pollingDebounceTimeout === undefined)
         state.pollingDebounceTimeout = "150";
       if (state.colorConditional === undefined)
         state.colorConditional = "#f59e0b";
       if (state.colorLooping === undefined) state.colorLooping = "#3b82f6";
       if (state.colorTcf === undefined) state.colorTcf = "#a855f7";
+      if (state.colorListener === undefined) state.colorListener = "#fa3b81";
       if (state.colorClass === undefined) state.colorClass = "#FFB834";
       if (state.colorInterface === undefined) state.colorInterface = "#46D9FF";
       if (state.colorType === undefined) state.colorType = "#10E5FA";
@@ -959,10 +969,16 @@ const breadcrumbsSettings = {
       },
       // New Block Segment Control Switches (On/Off)
       {
+        key: "renderListener",
+        text: "Render Event Listener Blocks",
+        info: "Show event listeners in the breadcrumbs trail.",
+        checkbox: !!pluginState.renderConditional,
+      },
+      {
         key: "renderConditional",
         text: "Render Conditional Blocks",
         info: "Show conditionals (if, else if, else, switch) in the breadcrumbs trail.",
-        checkbox: !!pluginState.renderConditional,
+        checkbox: !!pluginState.renderListener,
       },
       {
         key: "renderLooping",
@@ -1025,6 +1041,15 @@ const breadcrumbsSettings = {
         prompt: true,
         promptType: "text",
         placeholder: "#fa3b49",
+      },
+      {
+        key: "colorListener",
+        text: "Add or Remove EventListener Color",
+        info: "Set structural highlighting hex code for .addEventListener, .removeEventListener, .on or .off blocks.",
+        value: pluginState.colorListener || "#fa3b81",
+        prompt: true,
+        promptType: "text",
+        placeholder: "#fa3b81",
       },
       {
         key: "colorClass",

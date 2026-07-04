@@ -18,7 +18,8 @@ export type ScopeType =
   | "jsx"
   | "conditional"
   | "looping"
-  | "tcf";
+  | "tcf"
+  | "listener";
 
 declare var acode: any;
 
@@ -39,6 +40,7 @@ export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
   conditional: "#d68600",
   looping: "#52ff72",
   tcf: "#fa3b49",
+  listener: "#fa3b81",
 };
 
 /**
@@ -117,6 +119,9 @@ export function getIconByType(
     case "tcf":
       // Defensive Wrapper Shield (Exception Interception/Safety Shield Representation)
       return `<svg ${svgStyle}><path d="M3.5 3h9v4.5c0 3.2-2 6-4.5 7-2.5-1-4.5-3.8-4.5-7V3z"/></svg>`;
+    case "listener":
+      // ⚡ Event Listener/Trigger (Lightning Bolt Representation)
+      return `<svg ${svgStyle}><path d="M9.5 1.5 L3.5 8.5 H7.5 L5.5 14.5 L12.5 7.5 H8.5 Z"/></svg>`;
 
     default:
       return `<svg ${svgStyle}><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 5.5L7.5 8 5 10.5"/></svg>`;
@@ -133,33 +138,43 @@ export function getFileIconByType(ext: string): string {
 
   switch (normalizedExt) {
     case "js":
+      // 💛 Material VSCode JavaScript (Official Yellow Badge Style)
       return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
-        <rect x="2" y="2" width="12" height="12" rx="2" stroke="#E5C07B" stroke-width="1.3"/>
-        <text x="4" y="11" fill="#E5C07B" font-family="monospace" font-size="7" font-weight="bold">JS</text>
+        <rect x="1" y="1" width="14" height="14" rx="1.5" fill="#F7DF1E"/>
+        <path d="M7.5 11.5c0 .5-.2.9-.5 1.1s-.7.3-1.2.3c-.4 0-.8-.1-1.1-.2v-1.1c.3.1.6.2.9.2.4 0 .6-.2.6-.6V6.5h1.3v5zm4.3-1.4c0 .5-.2.9-.6 1.2s-1 .4-1.7.4c-.4 0-.8-.1-1.2-.2v-1.1c.4.2.8.3 1.2.3.5 0 .8-.2.8-.5 0-.3-.2-.5-.7-.7l-.5-.2c-.6-.2-1.1-.5-1.3-.8-.3-.3-.4-.7-.4-1.2 0-.5.2-.9.6-1.2.4-.3.9-.4 1.6-.4.4 0 .8.1 1.1.2v1.1c-.3-.1-.6-.2-.9-.2-.4 0-.7.1-.7.4 0 .2.2.4.6.5l.4.1c.7.2 1.1.5 1.4.8.2.4.3.8.3 1.3z" fill="#000000"/>
       </svg>`;
     case "ts":
+      // 💙 Material VSCode TypeScript (Official Blue Badge Style)
       return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
-        <rect x="2" y="2" width="12" height="12" rx="2" stroke="#61AFEF" stroke-width="1.3"/>
-        <text x="4" y="11" fill="#61AFEF" font-family="monospace" font-size="7" font-weight="bold">TS</text>
+        <rect x="1" y="1" width="14" height="14" rx="1.5" fill="#3178C6"/>
+        <path d="M5.9 6.5H3.5v1.1h.9v5.2h1.3V7.6h.9V6.5zm4.8 3.6c0 .5-.2.9-.6 1.2s-1 .4-1.7.4c-.4 0-.8-.1-1.2-.2v-1.1c.4.2.8.3 1.2.3.5 0 .8-.2.8-.5 0-.3-.2-.5-.7-.7l-.5-.2c-.6-.2-1.1-.5-1.3-.8-.3-.3-.4-.7-.4-1.2 0-.5.2-.9.6-1.2.4-.3.9-.4 1.6-.4.4 0 .8.1 1.1.2v1.1c-.3-.1-.6-.2-.9-.2-.4 0-.7.1-.7.4 0 .2.2.4.6.5l.4.1c.7.2 1.1.5 1.4.8.3.4.3.8.3 1.3z" fill="#FFFFFF"/>
       </svg>`;
     case "jsx":
+      // ⚛️ Material VSCode React JS (Cyan Atom Outline Style)
       return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
-        <ellipse cx="8" cy="8" rx="6" ry="2" stroke="#4FC1FF" stroke-width="1.3" transform="rotate(30 8 8)"/>
-        <ellipse cx="8" cy="8" rx="6" ry="2" stroke="#4FC1FF" stroke-width="1.3" transform="rotate(90 8 8)"/>
-        <ellipse cx="8" cy="8" rx="6" ry="2" stroke="#4FC1FF" stroke-width="1.3" transform="rotate(150 8 8)"/>
-        <circle cx="8" cy="8" r="1.2" fill="#4FC1FF"/>
+        <g stroke="#00D8FF" stroke-width="1.1" stroke-miterlimit="10">
+          <ellipse cx="8" cy="8" rx="6.5" ry="2.4" transform="rotate(30 8 8)"/>
+          <ellipse cx="8" cy="8" rx="6.5" ry="2.4" transform="rotate(90 8 8)"/>
+          <ellipse cx="8" cy="8" rx="6.5" ry="2.4" transform="rotate(150 8 8)"/>
+        </g>
+        <circle cx="8" cy="8" r="1.1" fill="#00D8FF"/>
       </svg>`;
     case "tsx":
+      // ⚛️ Material VSCode React TS (Deep Blue TS-React Style)
       return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
-        <ellipse cx="8" cy="8" rx="6" ry="2" stroke="#56B6C2" stroke-width="1.3" transform="rotate(30 8 8)"/>
-        <ellipse cx="8" cy="8" rx="6" ry="2" stroke="#56B6C2" stroke-width="1.3" transform="rotate(90 8 8)"/>
-        <ellipse cx="8" cy="8" rx="6" ry="2" stroke="#56B6C2" stroke-width="1.3" transform="rotate(150 8 8)"/>
-        <circle cx="8" cy="8" r="1.2" fill="#56B6C2"/>
+        <g stroke="#2F74C4" stroke-width="1.1" stroke-miterlimit="10">
+          <ellipse cx="8" cy="8" rx="6.5" ry="2.4" transform="rotate(30 8 8)"/>
+          <ellipse cx="8" cy="8" rx="6.5" ry="2.4" transform="rotate(90 8 8)"/>
+          <ellipse cx="8" cy="8" rx="6.5" ry="2.4" transform="rotate(150 8 8)"/>
+        </g>
+        <circle cx="8" cy="8" r="1.1" fill="#2F74C4"/>
       </svg>`;
     default:
+      // 📄 Material VSCode Document Default (Sleek Folded Document Style)
       return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
-        <path d="M3 2.5C3 1.67157 3.67157 1 4.5 1H10L13.5 4.5V13.5C13.5 14.3284 12.8284 15 12 15H4.5C3.67157 15 3 14.3284 3 13.5V2.5Z" stroke="#ABB2BF" stroke-width="1.3"/>
-        <path d="M9.5 1V4.5H13" stroke="#ABB2BF" stroke-width="1.3"/>
+        <path d="M3.5 1.5h6.5l3.5 3.5v9.5c0 .55-.45 1-1 1h-9c-.55 0-1-.45-1-1v-12c0-.55xl.45-1 1-1z" fill="#858585" opacity="0.15"/>
+        <path d="M3.5 1.5h6.5l3.5 3.5v9.5c0 .55-.45 1-1 1h-9c-.55 0-1-.45-1-1v-12c0-.55.45-1 1-1z" stroke="#858585" stroke-width="1.2" stroke-linejoin="round"/>
+        <path d="M10 1.5V5h3.5" stroke="#858585" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
   }
 }

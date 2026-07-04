@@ -262,6 +262,7 @@ export function resolveBreadcrumbs(
             const methodName = code.slice(propNode.from, propNode.to).trim();
             const listenerHooks = [
               "addEventListener",
+              "removeEventListener",
               "on",
               "off",
               "once",
@@ -681,6 +682,17 @@ export function resolveBreadcrumbs(
               to: currentNode.to,
               line: 0,
             });
+
+            // --- CRITICAL FIX: PREVENT KEY HOVER DUPLICATION ---
+            // Property node ကိုယ်တိုင်ကိုရော သူ့ရဲ့ parent (ObjectExpression) ကိုပါ blacklist သွင်းလိုက်ခြင်းဖြင့်
+            // Loop က parent ဆီရောက်သွားတဲ့အခါ duplicate parsing ထပ်မလုပ်အောင် တားဆီးပေးပါတယ်။
+            processedNodes.add(nodeKey);
+            if (currentNode.parent) {
+              processedNodes.add(
+                `${currentNode.parent.from}-${currentNode.parent.name}`,
+              );
+            }
+            // ----------------------------------------------------
           }
         } else if (mappedType === "jsx") {
           nodeName = getJSXTagName(currentNode, code, cursorPos);
@@ -732,6 +744,7 @@ export function resolveBreadcrumbs(
           const mid = (low + high) >> 1;
           if (lineStarts[mid] <= targetOffset) {
             lineNum = mid + 1;
+            low = mid + mid + 1;
             low = mid + 1;
           } else {
             high = mid - 1;
