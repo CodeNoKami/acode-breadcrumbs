@@ -1,5 +1,3 @@
-# Acode Breadcrumbs
-
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=10,24,30&height=180&section=header&text=Acode%20Breadcrumbs&fontSize=45&fontColor=fff&animation=twinkling" alt="Acode Breadcrumbs Header" />
 </p>
@@ -55,18 +53,18 @@
 ## 📸 <span style="color: #10b981;">Fullscreen Popup Previews</span>
 
 <!-- Full Size Multi-Theme Previews Block -->
-<div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin: 16px 0;">
+<div style="background-color: transparent; padding: 16px; margin: 16px 0;">
   
   <table width="100%" style="border-collapse: collapse; border: none;">
     <tr>
       <td width="50%" align="center" style="border: none; padding: 8px;">
-        <b style="color: #c9d1d9; display: block; margin-bottom: 8px;">🌌 Popup Dark Mode Preview</b>
+        <b style="display: block; margin-bottom: 8px;">🌌 Popup Dark Mode Preview</b>
         <kbd style="display: block; border: 1px solid #21262d; padding: 4px; background-color: #161b22; border-radius: 8px;">
           <img src="https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/popup_dark.png" alt="Acode Breadcrumbs Dark Theme Full Preview" width="100%" style="border-radius: 6px; display: block;" />
         </kbd>
       </td>
       <td width="50%" align="center" style="border: none; padding: 8px;">
-        <b style="color: #c9d1d9; display: block; margin-bottom: 8px;">☀️ Popup Light Mode Preview</b>
+        <b style=" display: block; margin-bottom: 8px;">☀️ Popup Light Mode Preview</b>
         <kbd style="display: block; border: 1px solid #21262d; padding: 4px; background-color: #161b22; border-radius: 8px;">
           <img src="https://raw.githubusercontent.com/CodeNoKami/acode-breadcrumbs/refs/heads/master/src/preview/popup_light.png" alt="Acode Breadcrumbs Light Theme Full Preview" width="100%" style="border-radius: 6px; display: block;" />
         </kbd>
@@ -86,6 +84,7 @@
 Real-time structural rendering mapping cleanly from the active filename through classes, methods, context blocks, and loops:
 
 ```
+
 database.ts › 🔶 DatabaseService › 📦 constructor › 🔄 while
 userController.js › 🍇 usersList.filter › 🔶 if
 app.tsx › 🔄 iifeModule › 🛡️ try
@@ -104,7 +103,7 @@ types.ts › 📄 UserRole › 🟢 config_list › 🗂️ properties
 ## ✨ <span style="color: #10b981;">Features</span>
 
 <!-- Main Card Wrapper -->
-<div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin: 16px 0;">
+<div style="background-color: transparent;  border-radius: 8px; padding: 20px; margin: 16px 0;">
   
   <!-- Card Header -->
   <div style="border-bottom: 1px solid #21262d; padding-bottom: 12px; margin-bottom: 16px;">
@@ -164,7 +163,7 @@ types.ts › 📄 UserRole › 🟢 config_list › 🗂️ properties
 All vector icons are rendered via optimized 16x16 viewport inline SVGs with standard-compliant line weight balancing.
 
 <!-- Main Container for Syntax List -->
-<div style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin: 16px 0;">
+<div style="background-color: transparent; padding: 16px; margin: 16px 0;">
 
   <!-- Class Scope -->
   <div style="background-color: #FFB834; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
@@ -276,7 +275,7 @@ All vector icons are rendered via optimized 16x16 viewport inline SVGs with stan
     <span style="color: #000000; font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.4); padding: 2px 6px; border-radius: 4px;">#FCD34D</span>
   </div>
 
-  <!-- Variable Scope -->
+ <!-- Variable Scope -->
   <div style="background-color: #4ADE80; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
     <div style="display: flex; align-items: center; gap: 12px;">
       <div style="background: #ffffff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -348,10 +347,13 @@ All vector icons are rendered via optimized 16x16 viewport inline SVGs with stan
 
 ## 🛠️ <span style="color: #10b981;">Contributor & Architecture Extension Guide</span>
 
-The plugin evaluates structural trees into a single visual state array using a decoupled architectural workflow:
+The plugin evaluates structural trees into a single visual state array using a decoupled, modular architectural workflow:
 
-```
+```bash
 [CodeMirror Viewport Change]
+│
+▼
+[breadcrumbsPlugin.ts] ──► Debounces the update, extracts the active syntax tree
 │
 ▼
 [lezerParser.ts] ──► Decodes Raw Lezer Tree via Nodes Range
@@ -360,10 +362,17 @@ The plugin evaluates structural trees into a single visual state array using a d
 [ScopeType Evaluation]
 │
 ▼
-[patterns.ts]  ──► Matches Scope Type to Vector Path + Color Token
+[patterns.ts] ──► Matches Scope Type to Vector Path + Color Token
+│
+▼
+[colorResolver.ts] ──► Applies user-configured color overrides on top of the pattern defaults
 │
 ▼
 [DOM Representation] (Breadcrumb Bar Updates)
+│
+▼ (on long-press)
+[popups/codePreviewPopup.ts] ──► Builds the frosted-glass code preview popup
+└── [utils/highlight.ts] ──► Syntax-highlights the snippet shown inside it
 ```
 
 <details>
@@ -373,9 +382,18 @@ The plugin evaluates structural trees into a single visual state array using a d
 
 ### 🟢 <span style="color: #34d399;">Project Components</span>
 
-- `main.ts`: Orchestrates workspace layout injections, window touch event bindings, long-press gestures, preference caching, and DOM updates.
+The plugin is split into focused modules rather than one flat file, each owning a single responsibility:
+
+- `main.ts`: The plugin's entry point. Constructs the singleton `BreadcrumbsPlugin` instance and registers it with `acode.setPluginInit` / `acode.setPluginUnmount` — the only file that touches the Acode plugin lifecycle hooks directly.
+- `breadcrumbsPlugin.ts`: The `BreadcrumbsPlugin` class itself. Orchestrates workspace layout injections, window touch event bindings, long-press gesture timers, preference caching, and breadcrumb DOM updates.
 - `lezerParser.ts`: Evaluates active syntax trees. Contains specific language rules determining if an active tree offset falls under structural declaration categories or helper blocks.
 - `patterns.ts`: Defines the UI/UX components. Holds type structures, default premium styling dictionaries, and custom SVG paths.
+- `utils/colorResolver.ts`: Resolves the display color for a given scope type, checking user overrides from the settings dashboard before falling back to `patterns.ts` defaults.
+- `utils/highlight.ts`: HTML-escaping and Lezer-powered syntax highlighting used to render the code snippet inside the long-press preview popup.
+- `popups/codePreviewPopup.ts`: Builds and manages the long-press "frosted glass" code preview popup — drag-resize, maximize/minimize, and copy-to-clipboard all live here.
+- `settings/breadcrumbsSettings.ts`: Defines the settings dashboard list (toggles, delay pickers, the 15-node color configurator) and the change callback that clears the render cache and refreshes the breadcrumb bar.
+- `globals.d.ts`: Ambient `declare var` statements for `editorManager` and `acode`, shared across every module without repeated imports.
+
 </details>
 
 ### 🟢 <span style="color: #34d399;">Adding New Language Tokens</span>
@@ -388,7 +406,7 @@ To register and implement a new syntax block mapping (e.g., adding a database qu
 export type ScopeType = "class" | "function" | "yourNewToken";
 ```
 
-2.  **Assign Core Identity Colors:** Update the fallback color configuration map (DEFAULT_BREADCRUMBS_COLORS):
+2. Assign Core Identity Colors: Update the fallback color configuration map (DEFAULT_BREADCRUMBS_COLORS):
 
 ```typescript
 export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
@@ -396,32 +414,29 @@ export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
 };
 ```
 
-3.  **Draft the UI Vector Path:** In getIconByType(), append a case block defining your custom vector inside the 16x16 frame setup:
+3. Draft the UI Vector Path: In getIconByType(), append a case block defining your custom vector inside the 16x16 frame setup:
 
 ```typescript
 case "yourNewToken":
   return `<svg ${svgStyle}><path d="M2 2h12v12H2z"/></svg>`;
-
-
 ```
 
-4.  **Hook Into the Parsing Stream:** Update lezerParser.ts to identify the syntax tag name delivered by the underlying language package dialect.
+4. Hook Into the Parsing Stream: Update lezerParser.ts to identify the syntax tag name delivered by the underlying language package dialect.
 
 ## 📦 <span style="color: #10b981;">Compilation & Build Pipeline</span>
 
-Ensure you have **Node.js** installed inside your development setup.
+Ensure you have Node.js installed inside your development setup.
 
 ```bash
 # 1. Clone the Repository
-git clone [https://github.com/CodeNoKami/acode-breadcrumbs.git](https://github.com/CodeNoKami/acode-breadcrumbs.git)
+git clone https://github.com/CodeNoKami/acode-breadcrumbs.git
 cd acode-breadcrumbs
 
 # 2. Initialize Dependencies
 npm install
 
 # 3. Execute Production Bundling
-npm run build
-
+npm run Build
 
 ```
 
