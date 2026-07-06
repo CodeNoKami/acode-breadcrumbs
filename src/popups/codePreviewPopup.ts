@@ -5,23 +5,39 @@ import { getIconByType } from "../utils/patterns";
 import { getCustomColor } from "../utils/colorResolver";
 import { highlightCodeSnippet } from "../utils/highlight";
 
+/**
+ * Configuration options for creating and anchoring the Code Preview Popup.
+ */
 export interface CodePreviewPopupOptions {
+  /** The code structural block data retrieved from the AST parser. */
   block: ScopeBlock;
+  /** The complete un-sliced raw source code of the active file. */
   fullCode: string;
+  /** The triggering HTML breadcrumb target element used to anchor or associate state. */
   scopeSpan: HTMLSpanElement;
+  /** The active file's filename used for language dialect extraction. */
   filename: string;
+  /** The active CodeMirror editor view instance. */
   editor: EditorView | null;
+  /** The bounding container component serving as the absolute anchor point. */
   container: HTMLDivElement | null;
   /**
-   * The plugin owns the "one popup at a time" bookkeeping. Before calling
-   * this function it should already have invoked and cleared any previous
-   * cleanup. This callback lets the popup hand its own dismiss function
-   * back to the plugin so it can be force-closed later (destroy, a new
-   * long-press elsewhere, etc.).
+   * Registry callback to pass the inner popup disposal logic back to the orchestrating plugin layer.
+   * This allows the parent controller to close open instances on initialization requests.
+   *
+   * @param cleanup - Function that detaches listeners and dismounts elements, or null.
    */
   registerCleanup: (cleanup: (() => void) | null) => void;
 }
 
+/**
+ * Instantiates and appends a floating code preview popup modal to the DOM.
+ * Renders syntax-highlighted snippets inside an isolated container with structural overlay interfaces
+ * supporting interactive resizing, clipboard operations, and responsive viewport macro-maximization.
+ *
+ * @param options - Configuration options and element references required to build the popup interface.
+ * @returns Void. Side effect appends an absolute styled overlay box to document.body.
+ */
 export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
   const {
     block,
@@ -33,10 +49,13 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     registerCleanup,
   } = options;
 
+  // Prevent initializing floating elements if CodeMirror view is not attached to the live DOM
   if (!editor || !editor.dom) return;
 
+  // Extract the specific code slice matching the targeted block's byte bounds
   const completeBlockCode = fullCode.slice(block.from, block.to);
 
+  // Performance Guard: Truncate large code segments to prevent UI rendering lockups
   let codeSnippet = completeBlockCode.trim();
   if (codeSnippet.length > 2500) {
     codeSnippet =
@@ -44,15 +63,18 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
       "\n\n/* ... (Truncated for layout performance) ... */";
   }
 
+  // Calculate top offset position based on breadcrumbs bounding region bounds
   let popupTop = 32;
   if (container) {
     popupTop = container.getBoundingClientRect().bottom + 4;
   }
 
+  // Parse color tokens from active editor styles to build consistent theme configurations
   const computedStyle = window.getComputedStyle(editor.dom);
   let editorBg = computedStyle.backgroundColor;
   let editorFg = computedStyle.color;
 
+  // Traverse downstream to find container nodes if root editor node styles are clear or unpopulated
   if (
     !editorBg ||
     editorBg === "rgba(0, 0, 0, 0)" ||
@@ -66,12 +88,14 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     }
   }
 
+  // Extract color vectors from editor background to interpolate uniform semi-transparent acrylic overlays
   let acrylicBg = "rgba(30, 30, 30, 0.75)";
   const rgbValues = editorBg.match(/\d+/g);
   if (rgbValues && rgbValues.length >= 3) {
     acrylicBg = `rgba(${rgbValues[0]}, ${rgbValues[1]}, ${rgbValues[2]}, 0.75)`;
   }
 
+  // Instantiation of global container root nodes
   const popup = document.createElement("div");
   popup.id = "breadcrumbs-preview-popup";
   popup.classList.add("cm-highlighted");
@@ -94,6 +118,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     overflow: hidden; min-width: 200px; min-height: 100px; max-height: 85vh;
   `;
 
+  // Dynamic fallback style engine initialization when standard highlighting themes are absent
   const styleTag = document.createElement("style");
   const nativeStyleEl = document.getElementById("cm-static-highlight-styles");
   if (
@@ -113,6 +138,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     popup.appendChild(styleTag);
   }
 
+  // Component Building: Window Title Bar Setup
   const titleBar = document.createElement("div");
   titleBar.style.cssText =
     "display: flex; align-items: center; justify-content: flex-start; gap: 14px; padding: 10px 14px; border-bottom: 1px solid rgba(128, 128, 128, 0.15); user-select: none; flex-shrink: 0;";
@@ -140,6 +166,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     flex: 1; min-width: 0; line-height: 1.35; gap: 1px;
   `;
 
+  // Fetch contextual features and preferences to initialize header icon tokens
   const settings: any = acode.require("settings");
   const pluginSettings = settings.value[PLUGIN_ID] || {};
   const showIcons = pluginSettings.showIcons !== false;
@@ -154,6 +181,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
   `;
   titleBar.appendChild(headerLabel);
 
+  // Component Building: Clipboard Copy Action Button Configuration
   const copyBtn = document.createElement("span");
   copyBtn.id = "breadcrumbs-popup-copy-btn";
   copyBtn.className = "icon copy";
@@ -194,6 +222,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
         }, 1800);
       })
       .catch(() => {
+        // Legacy fallback method for execution platforms running older System WebView containers
         const textarea = document.createElement("textarea");
         textarea.value = completeBlockCode;
         textarea.style.position = "fixed";
@@ -218,6 +247,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
   titleBar.appendChild(copyBtn);
   popup.appendChild(titleBar);
 
+  // Component Building: Scrollable Code Viewport Initialization
   const contentRegion = document.createElement("div");
   contentRegion.style.cssText =
     "flex: 1; overflow: auto; padding: 12px; line-height: 1.45; font-size:12px;";
@@ -228,6 +258,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
   contentRegion.appendChild(codeTag);
   popup.appendChild(contentRegion);
 
+  // Component Building: Drag Resize Handle Implementation
   const resizeHandle = document.createElement("div");
   resizeHandle.style.cssText =
     "position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: se-resize; background: linear-gradient(135deg, transparent 40%, rgba(128,128,128,0.4) 100%); border-bottom-right-radius: 12px; z-index: 10005;";
@@ -237,6 +268,10 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     startTouchY = 0,
     startWidth = 0,
     startHeight = 0;
+
+  /**
+   * Dispatches resize parameters on initialization of layout drag interaction sequences.
+   */
   const onTouchStartResize = (e: TouchEvent) => {
     if (e.touches.length === 0) return;
     e.stopPropagation();
@@ -251,6 +286,9 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     document.addEventListener("touchend", onTouchEndResize);
   };
 
+  /**
+   * Tracks and applies dynamic delta mutations to update container size properties.
+   */
   const onTouchMoveResize = (e: TouchEvent) => {
     if (e.touches.length === 0) return;
     e.preventDefault();
@@ -263,6 +301,10 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
   };
 
   const onTouchMoveResize_1 = onTouchMoveResize;
+
+  /**
+   * Detaches layout drag listeners safely from global document scope listeners.
+   */
   const onTouchEndResize = () => {
     document.removeEventListener("touchmove", onTouchMoveResize_1);
     document.removeEventListener("touchend", onTouchEndResize);
@@ -271,11 +313,15 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     passive: false,
   });
 
+  // Inject configured elements directly into the application DOM tree
   document.body.appendChild(popup);
 
   let isMaximized = false;
   let preNavStyles = { width: "", height: "", top: "", left: "" };
 
+  /**
+   * Dismounts popup interfaces from the DOM tree and clears tracking event instances cleanly.
+   */
   const dismissPopup = () => {
     if (copyResetTimeout) clearTimeout(copyResetTimeout);
     popup.remove();
@@ -292,8 +338,12 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     registerCleanup(null);
   };
 
+  // Register internal lifecycle closure routines to external handlers
   registerCleanup(dismissPopup);
 
+  /**
+   * Intercepts pointer events outside container coordinates to orchestrate backdrop dismiss actions.
+   */
   const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
     const targetNode = e.target as Node;
     if (!popup.contains(targetNode) && !scopeSpan.contains(targetNode)) {
@@ -309,6 +359,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
   toggleDot.addEventListener("click", (e) => {
     e.stopPropagation();
     if (!isMaximized) {
+      // Transition from current dimensions into localized macro viewport boundaries
       preNavStyles = {
         width: popup.style.width || defaultStyles.width,
         height: popup.style.height || defaultStyles.height,
@@ -321,6 +372,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
       popup.style.height = "80vh";
       isMaximized = true;
     } else {
+      // Revert from maximized state back to original bound styles
       popup.style.top = preNavStyles.top;
       popup.style.left = preNavStyles.left;
       popup.style.width = preNavStyles.width;
@@ -329,6 +381,7 @@ export function showCodePreviewPopup(options: CodePreviewPopupOptions): void {
     }
   });
 
+  // Defer attaching trigger listeners to bypass synchronization conflicts with instant modal initialization events
   setTimeout(() => {
     document.addEventListener("touchstart", handleOutsideClick);
     document.addEventListener("mousedown", handleOutsideClick);

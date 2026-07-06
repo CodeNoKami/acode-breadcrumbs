@@ -1,7 +1,7 @@
 import { PLUGIN_ID } from "../configs/constant";
 
 /**
- * Supported active structural scope types matching lezerParser AST outputs
+ * Supported active structural scope types matching lezerParser AST outputs.
  */
 export type ScopeType =
   | "class"
@@ -23,7 +23,10 @@ export type ScopeType =
 
 declare var acode: any;
 
-// Default high-contrast premium neon colors map definition
+/**
+ * Default high-contrast premium neon color definitions map.
+ * Each key corresponds to a supported syntax scope or block type.
+ */
 export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
   class: "#FFB834",
   interface: "#46D9FF",
@@ -47,8 +50,9 @@ export const DEFAULT_BREADCRUMBS_COLORS: Record<string, string> = {
  * Resolves a hexadecimal color token optimized for dark/AMOLED themes with high contrast,
  * modern neon accents, visual balance, and distinct mapping for active scopes.
  * Supports custom dynamic configuration bridges loaded via Acode user settings JSON payload.
- * @param type - The registered layout scope type
- * @returns HEX color string or functional CSS variable fallback
+ *
+ * @param type - The registered layout scope type.
+ * @returns A HEX color string or a functional CSS variable fallback.
  */
 export function getColorByType(type: ScopeType | string): string {
   try {
@@ -56,7 +60,7 @@ export function getColorByType(type: ScopeType | string): string {
     const pluginSettings = settings.value[PLUGIN_ID] || {};
     const customHighlighting = pluginSettings.breadcrumbsHighlighting || {};
 
-    // စိတ်ကြိုက် သတ်မှတ်ထားတဲ့ JSON ထဲမှာ အရောင်ရှိရင် ၎င်းကို ဦးစားပေးသုံးမည်
+    // If a custom color is defined in the settings JSON, prioritize using it
     if (customHighlighting && customHighlighting[type]) {
       return customHighlighting[type];
     }
@@ -74,9 +78,10 @@ export function getColorByType(type: ScopeType | string): string {
 /**
  * Generates an inline vector SVG icon string mapped to specific structural scopes.
  * Optimized with balanced geometric stroke paths for professional 16x16 viewboxes.
- * @param type - The target element configuration type
- * @param customColor - Optional prioritized override token
- * @returns Clean, standard-compliant XML/SVG inline asset string
+ *
+ * @param type - The target element configuration type.
+ * @param customColor - Optional prioritized color override token.
+ * @returns Clean, standard-compliant XML/SVG inline asset string.
  */
 export function getIconByType(
   type: ScopeType | string,
@@ -129,9 +134,10 @@ export function getIconByType(
 }
 
 /**
- * လက်ရှိဖိုင်၏ Extension အလိုက် Premium Thin-Line SVG Icon ကို ထုတ်ပေးသည်။
- * @param ext - File Extension (e.g., 'js', 'ts', 'jsx', 'tsx')
- * @returns string - SVG HTML string
+ * Returns a premium thin-line SVG file icon matching the provided file extension.
+ *
+ * @param ext - The file extension (e.g., 'js', 'ts', 'jsx', 'tsx').
+ * @returns An inline SVG HTML string representation of the matching file icon.
  */
 export function getFileIconByType(ext: string): string {
   const normalizedExt = ext.toLowerCase().trim();

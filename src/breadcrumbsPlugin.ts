@@ -6,51 +6,79 @@ import { getIconByType, getFileIconByType } from "./utils/patterns";
 import { getCustomColor } from "./utils/colorResolver";
 import { showCodePreviewPopup } from "./popups/codePreviewPopup";
 
-// 💡 Acode core ထဲတွင် ပါဝင်ပြီးသား တူညီသော instance များကို ခေါ်ယူအသုံးပြုခြင်း (Bundle Hazard Fix)
+// Core instances bundled within the Acode context — using acode.require handles
+// the platform's dependency bundle mapping hazards securely.
 const cmLanguage = acode.require("@codemirror/language");
 const syntaxTree = cmLanguage.syntaxTree;
 const ensureSyntaxTree = cmLanguage.ensureSyntaxTree;
 
+/**
+ * Core orchestrator class for the Breadcrumbs UI components.
+ * Tracks Editor view states, schedules layout calculations via debounced listeners,
+ * handles lifecycle events, and dynamically mutates CodeMirror trees to resolve structural hierarchy.
+ */
 export class BreadcrumbsPlugin {
+  /** Root UI toolbar panel tracking parent DOM insertion. */
   private container: HTMLDivElement | null = null;
+  /** Active inner text node host handling breadcrumbs segment rendering cascades. */
   private pathContainer: HTMLSpanElement | null = null;
+  /** Text tracking component tracking active filename configurations. */
   private prefixTextEl: HTMLSpanElement | null = null;
+  /** Inner element injection framework allocating file extension vector icons. */
   private prefixIconContainer: HTMLSpanElement | null = null;
+  /** Polling loop reference handling late-initialization safety fallbacks during app boot. */
   private intervalId: any = null;
+  /** Debounce process timeout tracker managing AST re-indexing and calculation frequencies. */
   private debounceTimeout: any = null;
+  /** Context long-press tracker managing execution triggers for preview popup menus. */
   private pressTimer: any = null;
+  /** Event wrapper mapping updates dispatched when the user shifts application typography configurations. */
   private onFontChangeHandler: ((newAppFont: string) => void) | null = null;
+  /** Reference mapping the currently prioritized CodeMirror 6 active Editor wrapper viewport. */
   private currentEditor: EditorView | null = null;
 
   // --- Optimization State Caches ---
+  /** Cache holding previous document text sequence to prevent processing identical buffers. */
   private lastDocString: string = "";
-  private lastPos: number = -1; // Track last position for aggressive early return
+  /** Tracking register monitoring head cursor indices for delta validation across update loops. */
+  private lastPos: number = -1;
+  /** Signature string identifying structure rendering shifts to eliminate unneeded DOM structural redraws. */
   private lastScopesFingerprint: string = "";
+  /** Destructuring cleanup callback reference handling active UI window disposal mechanics. */
   private activePopupCleanup: (() => void) | null = null;
+  /** Internal switch tracking drag and long-press interactions to block accidental trigger conflicts. */
   private blockClickBypass: boolean = false;
 
-  //  Setting တွင် အရောင်ပြောင်းလိုက်ပါက UI ချက်ချင်း update ဖြစ်စေရန် cache ရှင်းပေးမည့် method
+  /**
+   * Clears internal parsing evaluation cache pools.
+   * Dispatched during preference re-routing cycles to enforce instant UI styling updates.
+   */
   public clearCache(): void {
     this.lastDocString = "";
     this.lastPos = -1;
     this.lastScopesFingerprint = "";
   }
 
-  // Helper to safely extract native tree without Bundle Mismatch error
+  /**
+   * Reflection-based parsing framework that extracts standard Lezer trees across CodeMirror objects.
+   * Resolves the "Lezer Instance Hazard" in nested extension bundles by validating target prototype shape layouts.
+   *
+   * @param state - The active target CodeMirror EditorState context.
+   * @returns A valid native Lezer Tree reference structure, or null if reflection routes remain unresolved.
+   * @private
+   */
   private getNativeTree(state: any): any {
     if (!state) return null;
     try {
-      // Reflection-based extraction to bypass the Lezer Instance Hazard
-      // CodeMirror stores values in an internal array within the state object.
-      // Although minified, the internal array object keys can be iterated.
+      // Loop across state object keys to detect dynamic minified storage slots holding LanguageState
       for (const key of Object.keys(state)) {
         const val = state[key];
         if (Array.isArray(val)) {
           for (const item of val) {
-            // Looking for the LanguageState object which has the .tree property
+            // Identify target structure signatures carrying internal Lezer Tree properties
             if (item && item.tree && typeof item.tree === "object") {
               const t = item.tree;
-              // Validate it's a real Lezer Tree by checking non-minified props
+              // Perform structure verification tests to certify object layout compatibility
               if (
                 t.type &&
                 Array.isArray(t.children) &&
@@ -69,16 +97,23 @@ export class BreadcrumbsPlugin {
     return null;
   }
 
+  /**
+   * Initializes fundamental plug-in states, maps configuration registries, and sets up initialization intervals.
+   *
+   * @param baseUrl - Root asset endpoint route.
+   * @param $page - Host platform page layer window binding mapping.
+   * @param cache - Cached state preservation context mapping profiles.
+   */
   public async init(baseUrl: string, $page: any, cache: any): Promise<void> {
     const _ = { baseUrl, $page, cache };
 
-    // Fix B: Clear any pre-existing initialization intervals to prevent multi-init leaks
+    // Clear legacy timers to eliminate leakage vulnerabilities during reloads
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
 
-    // Initialize default plugin settings safely
+    // Set default values securely if setting registration profiles are absent
     const settings: any = acode.require("settings");
     if (!settings.value[PLUGIN_ID]) {
       settings.value[PLUGIN_ID] = {
@@ -109,7 +144,7 @@ export class BreadcrumbsPlugin {
       };
       settings.update(false);
     } else {
-      // Backwards compatibility layer for existing installations adding new keys
+      // Configuration fallback validation routine managing seamless application version upgrades
       const state = settings.value[PLUGIN_ID];
       if (state.disablePreviewPopup === undefined)
         state.disablePreviewPopup = false;
@@ -139,6 +174,7 @@ export class BreadcrumbsPlugin {
       settings.update(false);
     }
 
+    // Schedule canvas verification loops to coordinate mounting mechanics with Acode editor core structures
     this.intervalId = setInterval(() => {
       const editor = editorManager.editor;
       if (editor && editor.dom) {
@@ -149,6 +185,12 @@ export class BreadcrumbsPlugin {
     }, 200);
   }
 
+  /**
+   * Generates structural DOM layout shells and wires up event listeners onto target Editor viewports.
+   *
+   * @param editor - The destination CodeMirror View targeting viewport initialization.
+   * @private
+   */
   private setupBreadcrumbs(editor: EditorView) {
     if (this.container) this.container.remove();
     this.currentEditor = editor;
@@ -215,6 +257,12 @@ export class BreadcrumbsPlugin {
     this.queueUpdate(editor);
   }
 
+  /**
+   * Document tab-switch callback. Handles teardown logic for old context maps,
+   * shifts viewport ownership references, and reparents DOM structural frames smoothly.
+   *
+   * @private
+   */
   private onFileSwitched = () => {
     const editor = editorManager.editor;
     if (editor && editor.dom) {
@@ -242,6 +290,12 @@ export class BreadcrumbsPlugin {
     }
   };
 
+  /**
+   * Binds selection and viewport focus change listener callbacks to synchronize breadcrumbs changes.
+   *
+   * @param editor - Active host framework view mapping container context.
+   * @private
+   */
   private injectUpdateListener(editor: EditorView) {
     document.removeEventListener(
       "selectionchange",
@@ -257,6 +311,13 @@ export class BreadcrumbsPlugin {
     }
   }
 
+  /**
+   * Schedules a throttled validation pass on structural updates.
+   * Prevents system overhead from rapid keyboard inputs by pacing parsing requests.
+   *
+   * @param editor - Target validation viewport view.
+   * @private
+   */
   private queueUpdate(editor: EditorView) {
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
 
@@ -272,17 +333,26 @@ export class BreadcrumbsPlugin {
     }, delayDuration);
   }
 
+  /** Global tracker callback routing cursor position adjustments. */
   private onGlobalSelectionChange = () => {
     if (this.currentEditor) this.queueUpdate(this.currentEditor);
   };
 
+  /** Internal feedback tracking update routing logic mapping interactive focus events. */
   private onEditorUpdate = () => {
     if (this.currentEditor) this.queueUpdate(this.currentEditor);
   };
 
-  // Closes any currently-open preview popup, then delegates the actual DOM
-  // building to the popups/codePreviewPopup module. The plugin only keeps
-  // ownership of "which cleanup fn is currently active".
+  /**
+   * Manages cleanup workflows for active popup panels, then shifts DOM assembly assignments
+   * downstream to the external CodePreviewPopup module.
+   *
+   * @param block - Abstract configuration state slice matching selection properties.
+   * @param fullCode - Raw document text string data block.
+   * @param scopeSpan - Source target element frame tracking structural target alignment vectors.
+   * @param filename - Identification name token string for targeted active tab maps.
+   * @private
+   */
   private openCodePreviewPopup(
     block: ScopeBlock,
     fullCode: string,
@@ -307,6 +377,12 @@ export class BreadcrumbsPlugin {
     });
   }
 
+  /**
+   * Primary execution loop. Extracts abstract syntax mappings from structural states,
+   * enforces custom user filtering preferences, and reconstructs the HTML breadcrumbs trail.
+   *
+   * @param editor - Target context view framework processing state updates.
+   */
   public updateBreadcrumbs(editor: EditorView): void {
     const containerEl = this.container;
     const pathEl = this.pathContainer;
@@ -339,42 +415,41 @@ export class BreadcrumbsPlugin {
     const pos = state.selection.main.head;
     const fullCode = state.doc.toString();
 
-    // High-Efficiency Early Return
-    // Instantly aborts heavy processing if neither document content nor cursor offset shifted,
-    // avoiding unnecessary `ensureSyntaxTree` or manual parsing on every debounce tick.
+    // High-Efficiency Early Return Strategy:
+    // Aborts processing instantly if neither the document structure nor cursor offset changes,
+    // protecting memory profiles from unnecessary syntax recalculations on idle frames.
     if (fullCode === this.lastDocString && pos === this.lastPos) {
       return;
     }
 
-    // Reflection-based native Tree extraction (or manual fallback)
+    // Attempt reflection extraction of the active Lezer Tree
     const nativeTree = this.getNativeTree(state);
     let finalTree = nativeTree;
 
-    // Safety net: Use ensureSyntaxTree to force a parse if native tree is empty (length: 0)
+    // Incremental Parsing Fallback Strategy:
+    // Invoked if the internal cache returns empty to rebuild missing AST nodes safely.
     if (!finalTree || finalTree.length === 0) {
-      // Dialect logic kept here to construct temporary config if fallback is needed
       let dialect = "";
       if (filename.endsWith(".tsx")) dialect = "ts jsx";
       else if (filename.endsWith(".ts")) dialect = "ts";
       else if (filename.endsWith(".jsx")) dialect = "jsx";
 
-      // If reflection failed, try forcing a parse using ensureSyntaxTree
-      // This bridges the GAP safely without the Instance Hazard on standard CM6 syntax extensions.
+      // Re-evaluate through ensureSyntaxTree to complete missing nodes up to the current buffer length
       const fallbackTree = ensureSyntaxTree(state, state.doc.length, 3000);
 
       if (fallbackTree) {
         finalTree = fallbackTree;
       } else {
-        // Ultimate fallback: Manual parsing in plugin's instance (heavier)
+        // Complete structural rebuilding fallback path for untyped or missing context states
         const configuredParser = jsParser.configure({ dialect });
         finalTree = configuredParser.parse(fullCode);
       }
     }
 
-    // Call optimized lezerParser signature
+    // Traverse the Lezer AST structure to map hierarchical node chains
     let validScopes = resolveBreadcrumbs(finalTree, fullCode, pos);
 
-    // Filters scopes based on User Config Switches
+    // Apply configuration visibility filters to current tokens
     const settings: any = acode.require("settings");
     const pluginSettings = settings.value[PLUGIN_ID] || {};
 
@@ -391,11 +466,13 @@ export class BreadcrumbsPlugin {
       return true;
     });
 
+    // Compile an identity fingerprint to detect scope structure changes
     let currentFingerprint = "";
     for (let i = 0; i < validScopes.length; i++) {
       currentFingerprint += `${validScopes[i].type}-${validScopes[i].from}-${validScopes[i].to}|`;
     }
 
+    // Skip DOM updates if layout states match previous tree shapes
     if (
       fullCode === this.lastDocString &&
       currentFingerprint === this.lastScopesFingerprint
@@ -407,6 +484,7 @@ export class BreadcrumbsPlugin {
     this.lastPos = pos;
     this.lastScopesFingerprint = currentFingerprint;
 
+    // Flush old UI items safely
     while (pathEl.firstChild) {
       pathEl.removeChild(pathEl.firstChild);
     }
@@ -420,6 +498,7 @@ export class BreadcrumbsPlugin {
       globalSpan.innerHTML = "...";
       pathEl.appendChild(globalSpan);
     } else {
+      // Build layouts via standard Document Fragments to optimize repaint sequences
       const fragment = document.createDocumentFragment();
       const separatorBlueprint = document.createElement("span");
       separatorBlueprint.style.cssText =
@@ -440,6 +519,7 @@ export class BreadcrumbsPlugin {
 
         scopeSpan.innerHTML = `${iconHtml}<span style="color: ${customColor}; font-weight: ${isLast ? "bold" : "normal"};">${block.name}</span>`;
 
+        // Direct Jumps: Shift text cursor directly to targeted scope locations upon tap interactions
         scopeSpan.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -454,6 +534,7 @@ export class BreadcrumbsPlugin {
           }
         });
 
+        // Setup touch-hold listener cards to manage structural code previews
         scopeSpan.addEventListener("touchstart", (e) => {
           this.blockClickBypass = false;
           if (this.pressTimer) clearTimeout(this.pressTimer);
@@ -493,9 +574,16 @@ export class BreadcrumbsPlugin {
       pathEl.appendChild(fragment);
     }
 
+    // Auto scroll view panel frames to trace long structural scope chains
     containerEl.scrollLeft = containerEl.scrollWidth;
   }
 
+  /**
+   * Plugin disposal method. Tears down UI elements, unbinds hardware touch timers,
+   * flushes garbage collections safely, and drops active platform runtime hooks.
+   *
+   * @returns Resolves asynchronously when demolition procedures complete.
+   */
   public async destroy(): Promise<void> {
     if (this.intervalId) clearInterval(this.intervalId);
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);

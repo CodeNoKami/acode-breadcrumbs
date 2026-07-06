@@ -1,55 +1,69 @@
 import { PLUGIN_ID } from "../configs/constant";
 import type { BreadcrumbsPlugin } from "../breadcrumbsPlugin";
 
-// Full 15 Node Types Prompt UI Mapping Configuration
-//
-// This is a factory (not a bare object) so the settings module never needs
-// to import the singleton plugin instance directly — main.ts hands it the
-// instance it already created, keeping the dependency direction one-way:
-// main.ts -> breadcrumbsPlugin.ts + breadcrumbsSettings.ts
+/**
+ * Factory function that constructs the user interface configuration mapping for the Acode Settings panel.
+ * Using a factory pattern decouples the static configurations from the singleton instantiation lifecycle,
+ * ensuring unidirectional dependency flow: main.ts -> breadcrumbsPlugin.ts + breadcrumbsSettings.ts
+ *
+ * @param pluginInstance - The active orchestrating instance of the breadcrumbs plugin.
+ * @returns An object containing the dynamically read list of settings elements and its update callback handler.
+ */
 export function createBreadcrumbsSettings(pluginInstance: BreadcrumbsPlugin) {
   return {
+    /**
+     * Dynamic getter that generates the structured setting fields array.
+     * Evaluates Acode's internal app cache preferences live upon every menu layout invocation.
+     *
+     * @returns Array of Acode settings schema definitions (checkboxes, inputs, selects).
+     */
     get list() {
       const settings = acode.require("settings");
       const pluginState = settings.value[PLUGIN_ID] || {};
       return [
+        // A setting that determines whether or not to display an svg icon in front of scopes in the Breadcrumbs Bar.
         {
           key: "showIcons",
           text: "Show Scope Icons",
           info: "Display structure and layout icons on the breadcrumbs bar and inside the code popups.",
           checkbox: !!pluginState.showIcons,
         },
+        // A setting that determines whether or not a Popup Preview is displayed when you long-press on a scope in the Breadcrumbs Bar.
         {
           key: "disablePreviewPopup",
           text: "Disable Preview Popup",
           info: "Turn off the code preview card popup when long-pressing structural tokens.",
           checkbox: !!pluginState.disablePreviewPopup,
         },
-        // New Block Segment Control Switches (On/Off)
+        // A setting that allows you to turn on or off the inclusion of "event listener" scopes in the Breadcrumbs Bar.
         {
           key: "renderListener",
           text: "Render Event Listener Blocks",
           info: "Show event listeners in the breadcrumbs trail.",
           checkbox: !!pluginState.renderConditional,
         },
+        // A setting that allows you to turn on or off whether "conditional statement" scopes are included or not in the Breadcrumbs Bar.
         {
           key: "renderConditional",
           text: "Render Conditional Blocks",
           info: "Show conditionals (if, else if, else, switch) in the breadcrumbs trail.",
           checkbox: !!pluginState.renderListener,
         },
+        // A setting that allows you to turn on or off whether looping scopes are included or not in the Breadcrumbs Bar.
         {
           key: "renderLooping",
           text: "Render Looping Blocks",
           info: "Show structural loops (for, for-in, for-of, while, do) in the breadcrumbs trail.",
           checkbox: !!pluginState.renderLooping,
         },
+        // A setting that allows you to turn on or off whether or not to include TCF (try, catch, finally) scopes in the Breadcrumbs Bar.
         {
           key: "renderTcf",
           text: "Render Try-Catch Blocks",
           info: "Show error handling constructs (try, catch, finally) in the breadcrumbs trail.",
           checkbox: !!pluginState.renderTcf,
         },
+        // Selector setting that determines how long you have to press a scope in the Breadcrumbs Bar before the popup is displayed.
         {
           key: "previewDelay",
           text: "Popup Preview Delay",
@@ -61,6 +75,7 @@ export function createBreadcrumbsSettings(pluginInstance: BreadcrumbsPlugin) {
             ["800", "Slow (800ms)"],
           ],
         },
+        // This is a selector setting that determines how long after the cursor position changes the scopes in the Breadcrumbs Bar will be updated (to reduce CPU processing).
         {
           key: "pollingDebounceTimeout",
           text: "Debounce Polling Timeout",
@@ -219,13 +234,20 @@ export function createBreadcrumbsSettings(pluginInstance: BreadcrumbsPlugin) {
         },
       ];
     },
+    /**
+     * Intercepting update callback dispatched whenever an individual preference configuration changes.
+     * Sanitizes syntax color inputs by verifying octothorpe prefixes (`#`) and flags live reactive UI cycles.
+     *
+     * @param key - The settings registration identifier lookup token string.
+     * @param value - The fresh modification parameter value received from the interaction component view.
+     */
     cb: (key: string, value: any) => {
       const settings = acode.require("settings");
       if (!settings.value[PLUGIN_ID]) {
         settings.value[PLUGIN_ID] = {};
       }
 
-      // Auto prefix '#' formatting handler
+      // Auto-prefix formatting handler for text hex-color code variables
       if (key.startsWith("color") && typeof value === "string") {
         let trimmedColor = value.trim();
         if (
@@ -239,8 +261,10 @@ export function createBreadcrumbsSettings(pluginInstance: BreadcrumbsPlugin) {
         settings.value[PLUGIN_ID][key] = value;
       }
 
+      // Commit configuration changes to Acode disk memory storage
       settings.update(true);
 
+      // Flash cache dependencies and trigger instant re-indexing calculation cycles across active viewports
       pluginInstance.clearCache();
       if (editorManager && editorManager.editor) {
         pluginInstance.updateBreadcrumbs(editorManager.editor);

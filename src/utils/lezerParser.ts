@@ -1,18 +1,30 @@
 import { SyntaxNode, Tree } from "@lezer/common";
 
+/**
+ * Represents a parsed structural blueprint context segment inside the source document.
+ * Maps directly to individual breadcrumb segments rendered in the premium UI bar.
+ */
 export interface ScopeBlock {
+  /** Unique identifying token pattern generated from the start offset and token type */
   id: string;
+  /** The clean semantic display name of the code block segment */
   name: string;
-  // class, interface, type, enum, function, method, jsx, object, array,
-  // property, variable, conditional, looping, tcf, method-chain, listener
+  /** Syntactic category classification (e.g., 'class', 'function', 'conditional', 'listener') */
   type: string;
+  /** Absolute source character string start position pointer offset index */
   from: number;
+  /** Absolute source character string ending position pointer offset index */
   to: number;
+  /** The human-readable source code line index position computed via binary search */
   line: number;
 }
 
 /**
- * Maps Lezer AST core nodes directly to the Breadcrumbs Premium Neon Scopes
+ * Maps Lezer Abstract Syntax Tree (AST) core nodes directly to the Breadcrumbs Premium Neon Scopes.
+ * Isolates and extracts language-agnostic structural blocks from JS/TS documents.
+ *
+ * @param nodeType - Raw classification string identifier returned directly from Lezer parser tree nodes.
+ * @returns A matching normalized code block scope name token string, or null if the block is ignored.
  */
 export function getScopeType(nodeType: string): string | null {
   switch (nodeType) {
@@ -68,6 +80,9 @@ export function getScopeType(nodeType: string): string | null {
   }
 }
 
+/**
+ * Collection array of direct identifier syntax node name rules containing literal display strings.
+ */
 const directNameTokens = [
   "VariableDefinition",
   "TypeDefinition",
@@ -82,6 +97,9 @@ const directNameTokens = [
   "Identifier",
 ];
 
+/**
+ * Collection array of common standard listener registration hooks and reactive stream hook naming conventions.
+ */
 const listenerHooks = [
   "addEventListener",
   "removeEventListener",
@@ -92,6 +110,14 @@ const listenerHooks = [
   "watch",
 ];
 
+/**
+ * Recursively inspects a node structure branch to find and extract its variable or reference name identifier string.
+ * Automatically accommodates constructor overrides in standard class-method declarations.
+ *
+ * @param node - The starting syntax container node element tree branch.
+ * @param code - The raw active source string used to execute character slices.
+ * @returns The resolved literal string contents representing the node name identifier, or null.
+ */
 function getIdentifierName(
   node: SyntaxNode | null,
   code: string,
@@ -130,6 +156,11 @@ function getIdentifierName(
  * token inside a MethodDeclaration or Property node, and returns the
  * prefixed name (e.g. "(get) foo"). Shared by both the class-method path
  * and the object-literal-property path so the logic only lives in one place.
+ *
+ * @param containerNode - The parent property or method node element declaration to inspect.
+ * @param code - The raw active source string used to execute character slices.
+ * @param baseName - The base identifier name resolved for the target method or property.
+ * @returns The modifier-prefixed label string or the fallback base name unchanged.
  */
 function withAccessorPrefix(
   containerNode: SyntaxNode,
@@ -154,6 +185,14 @@ function withAccessorPrefix(
   return baseName;
 }
 
+/**
+ * Traverses a CallExpression or MemberExpression tree path backwards to formulate
+ * a flattened string descriptor representation of the nested object reference.
+ *
+ * @param node - The starting identifier or member chain branch node element.
+ * @param code - The raw active source string used to execute character slices.
+ * @returns A dot-notated representation of the access path chain string, or null.
+ */
 function getCleanCallerName(
   node: SyntaxNode | null,
   code: string,
@@ -192,6 +231,15 @@ function getCleanCallerName(
   return null;
 }
 
+/**
+ * Extracts the explicit element tag name from a JSX element and calculates contextual meta
+ * properties if the cursor rests within a specific attribute assignment block wrapper.
+ *
+ * @param node - The underlying parent JSX opening or self-closing container syntax node.
+ * @param code - The raw active source string used to execute character slices.
+ * @param cursorPos - Absolute cursor offset coordinate position inside the current text document.
+ * @returns An object payload detailing the tag name string, matching attribute node bounds, and attribute name string.
+ */
 function getJSXTagName(
   node: SyntaxNode,
   code: string,
@@ -255,6 +303,14 @@ function getJSXTagName(
   return { name: tagName, attrScope: null, attrName: null };
 }
 
+/**
+ * String parsing scan heuristic method that sweeps backwards from a node start offset boundary
+ * to extract implicit naming tokens for anonymous function expressions or inline structures.
+ *
+ * @param nodeFrom - Starting character string offset index of the anonymous structural node element.
+ * @param code - The raw active source string used to execute character slices.
+ * @returns A structured lookup signature detailing the matching variable name and type, or null.
+ */
 function getLookbackName(
   nodeFrom: number,
   code: string,
@@ -303,6 +359,17 @@ function getLookbackName(
   return null;
 }
 
+/**
+ * Traverses and evaluates the active Lezer Abstract Syntax Tree (AST) structure relative
+ * to the absolute cursor position, generating an ordered sequence array of scope block footprints.
+ * Calculates explicit contextual structural scopes including event listeners, method chains,
+ * component trees, and loop conditionals.
+ *
+ * @param tree - Complete syntax parsing architecture tree output returned by Lezer for analysis.
+ * @param code - Complete raw string text body contained inside the target editing canvas.
+ * @param cursorPos - The specific character coordinate index identifying where the user cursor lives.
+ * @returns Flattened array map sequence of structural scope elements matching the hierarchical stack tree.
+ */
 export function resolveBreadcrumbs(
   tree: Tree,
   code: string,
