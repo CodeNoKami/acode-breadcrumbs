@@ -26,9 +26,7 @@
     "dev": "node esbuild.config.mjs --serve",
     "build": "tsc --noEmit && node esbuild.config.mjs"
   },
-  "browserslist": [
-    "> 0.25%, not dead"
-  ],
+  "browserslist": ["> 0.25%, not dead"],
   "resolutions": {
     "terser": ">=5.14.2 ",
     "glob-parent": ">=5.1.2"
