@@ -22,47 +22,47 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-build-and-release:
-  needs: release-please
-  if: ${{ needs.release-please.outputs.release_created }}
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
+  build-and-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: "npm"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
 
-    - name: Install Dependencies
-      run: npm ci
+      - name: Install Dependencies
+        run: npm ci
 
-    # package.json ထဲက ဗားရှင်းအသစ်ကို plugin.json ထဲ Auto ထည့်ပေးတာ
-    - name: Sync version to plugin.json
-      run: |
-        VERSION=$(node -p "require('./package.json').version")
-        node -e "
-          const fs = require('fs');
-          const plugin = require('./plugin.json');
-          plugin.version = '$VERSION';
-          fs.writeFileSync('./plugin.json', JSON.stringify(plugin, null, 2));
-        "
+      # package.json ထဲက ဗားရှင်းအသစ်ကို plugin.json ထဲ Auto ထည့်ပေးတာ
+      - name: Sync version to plugin.json
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          node -e "
+            const fs = require('fs');
+            const plugin = require('./plugin.json');
+            plugin.version = '$VERSION';
+            fs.writeFileSync('./plugin.json', JSON.stringify(plugin, null, 2));
+          "
 
-    # esbuild နဲ့ build ဆောက်တာ (dist folder ထွက်လာမယ်)
-    - name: Build Plugin
-      run: npm run build
+      # esbuild နဲ့ build ဆောက်တာ (dist folder ထွက်လာမယ်)
+      - name: Build Plugin
+        run: npm run build
 
-    # ဗားရှင်းကို ဖတ်ပြီး 'acode-breadcrumbs-vX.X.X.zip' နာမည်နဲ့ ဇစ်ဖိုင်ပတ်တာ
-    - name: Zip Plugin Archetype
-      run: |
-        VERSION=$(node -p "require('./package.json').version")
-        node .vscode/pack-zip.js "acode-breadcrumbs-v$VERSION.zip"
+      # ဗားရှင်းကို ဖတ်ပြီး 'acode-breadcrumbs-vX.X.X.zip' နာမည်နဲ့ ဇစ်ဖိုင်ပတ်တာ
+      - name: Zip Plugin Archetype
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          node .vscode/pack-zip.js "acode-breadcrumbs-v$VERSION.zip"
 
-    # အသစ်ထွက်လာတဲ့ ဗားရှင်းပါတဲ့ ဇစ်ဖိုင်ကို GitHub Release ပေါ် တင်မယ်
-    - name: Upload Release Asset
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        VERSION=$(node -p "require('./package.json').version")
-        gh release upload ${{ needs.release-please.outputs.tag_name }} "acode-breadcrumbs-v$VERSION.zip"
+      # အသစ်ထွက်လာတဲ့ ဗားရှင်းပါတဲ့ ဇစ်ဖိုင်ကို GitHub Release ပေါ် တင်မယ်
+      - name: Upload Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          gh release upload ${{ needs.release-please.outputs.tag_name }} "acode-breadcrumbs-v$VERSION.zip"
