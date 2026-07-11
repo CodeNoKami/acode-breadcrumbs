@@ -48,7 +48,6 @@ let buildConfig = {
       servedir: ".",
       port: 3000,
     });
-
   } else {
     console.log("Building for production...");
     await esbuild.build(buildConfig);
